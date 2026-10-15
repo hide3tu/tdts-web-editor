@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TDTS / XDTS Editor v2.0</title>
+<style>
+:root{
+  --paper:#d6f1ef;--paper-off:#a9b6b4;--ink:#2a3a3a;--rule:#86a6a4;--rule6:#5f7f7d;--rule24:#3f5b59;--frame:#4b6463;
+  --sel:#ffe27a;--sel-line:#c98a00;--hold:#2a3a3a;--bar:#2f3537;--bar-btn:#454c4f;--muted:#5f7372;--accent:#0f6e8c;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;background:#9fb4b3;color:var(--ink);overflow:hidden;display:flex;flex-direction:column}
+button,input,select{font:inherit}
+.titlebar{flex:none;height:30px;background:#0f5f78;color:#fff;display:flex;align-items:center;gap:12px;padding:0 12px;font-size:13px}
+.titlebar .app{font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.titlebar .status{margin-left:auto;font-size:12px;color:#d7ecf2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
+.ribbon{flex:none;display:flex;align-items:stretch;background:#f4f7f7;border-bottom:1px solid #b9c9c9;padding:4px 6px 0;gap:0;overflow-x:auto;color:#223}
+.rgroup{display:flex;flex-direction:column;padding:0 8px;border-right:1px solid #d3dede}
+.rgroup:last-child{border-right:0}
+.rbody{flex:1;display:flex;align-items:center;gap:3px}
+.rcap{font-size:10.5px;color:#6a7b7b;text-align:center;padding:2px 0 3px}
+.ribbon button,.ribbon label.big{font-family:inherit;color:#223;cursor:pointer;background:transparent;border:1px solid transparent;border-radius:4px}
+.ribbon button:hover:not(:disabled),.ribbon label.big:hover{background:#dcecef;border-color:#a9cbd3}
+.ribbon button:active:not(:disabled){background:#c4dfe5}
+.ribbon button:disabled{opacity:.38;cursor:default}
+.ribbon .big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:58px;height:56px;padding:2px 6px;font-size:11.5px;white-space:nowrap}
+.ribbon .big i{font-style:normal;font-size:22px;line-height:1}
+.ribbon .stack{display:flex;flex-direction:column;justify-content:center;gap:1px;height:56px}
+.ribbon .small{display:flex;align-items:center;gap:5px;height:18px;padding:0 7px;font-size:11.5px;white-space:nowrap}
+.ribbon .small i{font-style:normal;font-size:12px;width:14px;text-align:center}
+.ribbon input[type=file]{display:none}
+.ribbon .rlbl{font-size:11px;color:#556;padding-left:2px;white-space:nowrap}
+.ribbon .optgrid{display:grid;grid-template-columns:auto auto auto auto;justify-items:start;align-items:center;gap:4px 6px;height:56px;align-content:center}
+.ribbon .optgrid .seg button{height:22px;padding:2px 8px}
+.ribbon .seg button{white-space:nowrap}
+.rgroup{flex:none}
+.seg{display:inline-flex;border:1px solid #a9bfc0;border-radius:4px;overflow:hidden;background:#fff}
+.ribbon .seg button{border:0;border-radius:0;border-left:1px solid #c8d6d6;padding:4px 10px;font-size:11.5px;height:26px}
+.ribbon .seg button:first-child{border-left:0}
+.ribbon .seg button.on{background:#0f6e8c;color:#fff;font-weight:700}
+.ribbon .seg.multi button{padding:4px 8px}
+.ribbon .seg.multi button:not(.on){color:#8a9a9a;text-decoration:line-through}
+.hidden-note{display:inline-block;margin-left:10px;padding:1px 8px;border-radius:9px;background:#fff3c4;border:1px solid #e0c060;color:#6a5200;font-size:11px;cursor:pointer}
+.tb-sheets{display:inline-flex;align-items:center;gap:6px;margin-left:24px}
+.tb-lbl{font-size:12px;color:#cfe6ee}
+.pager{display:inline-flex;align-items:center;gap:3px}
+.titlebar .pager button{min-width:26px;height:22px;padding:0 7px;font-size:12px;border:1px solid #3d8aa3;background:#1a7390;color:#fff;border-radius:3px;cursor:pointer}
+.titlebar .pager button:hover:not(:disabled){background:#2a8cab}
+.titlebar .pager button:disabled{opacity:.35;cursor:default}
+.pager #sheetChips{display:inline-flex;gap:3px;max-width:50vw;overflow-x:auto;scrollbar-width:none}
+.titlebar .pager .chip.on{background:#fff;color:#0f5f78;font-weight:700;border-color:#fff}
+.sheet-ops{display:flex;gap:8px;align-items:center;margin:0 0 24px 2px}
+.sheet-ops button{border:1px dashed var(--rule24);background:var(--paper);color:var(--ink);border-radius:5px;padding:8px 16px;font-size:13px;cursor:pointer}
+.sheet-ops button:hover:not(:disabled){background:#fff;border-style:solid}
+.sheet-ops button:disabled{opacity:.4;cursor:default}
+.sheet-ops span{font-size:12px;color:#29403f}
+.main{flex:1;overflow:auto;padding:14px}
+.sheet{width:max-content;margin:0 auto}
+
+/* header block (top of the sheet) */
+.head{display:grid;grid-template-columns:minmax(220px,2.2fr) 1.3fr 1fr 1fr .9fr;border:2px solid var(--rule24);background:var(--paper);margin-bottom:14px;min-width:760px}
+.head>div{border-left:1px solid var(--rule6);display:flex;flex-direction:column}
+.head>div:first-child{border-left:0}
+.head .lbl{font-size:11px;text-align:center;border-bottom:1px solid var(--rule6);padding:2px 4px;letter-spacing:.2em}
+.head .val{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;font-size:20px;min-height:44px}
+.head input{border:0;border-bottom:1px dashed var(--rule);background:transparent;text-align:center;font-size:18px;color:var(--ink);padding:2px;min-width:0}
+.head input:focus{outline:0;border-bottom:1px solid var(--accent);background:#fff9}
+.head .w-name{width:100%}.head .w-num{width:3.2em}
+.head .ro{font-size:18px}
+.head .fmt{font-size:12px;color:var(--muted)}
+
+/* page */
+.page{margin-bottom:18px}
+.page-label{font-size:12px;color:#29403f;margin:0 0 4px 2px}
+.halves{display:flex;gap:10px;align-items:flex-start}
+table.ts{border-collapse:separate;border-spacing:0;background:var(--paper);table-layout:fixed;border:2px solid var(--rule24)}
+.ts th,.ts td{padding:0;font-size:12px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts thead th{font-weight:400;border-bottom:1px solid var(--rule6);border-left:1px solid var(--rule);height:20px;background:var(--paper);position:relative}
+.ts thead tr.g th{height:22px;letter-spacing:.08em}
+.ts thead tr.n th{border-bottom:2px solid var(--rule24)}
+.ts.sticky thead th{position:sticky;z-index:2}
+.ts.sticky thead tr.g th{top:-14px}
+.ts.sticky thead tr.n th{top:8px}
+.ts.sticky thead tr.g th::before{content:"";position:absolute;left:-2px;right:-2px;bottom:100%;height:14px;background:#9fb4b3}
+.ts th.gs,.ts td.gs{border-left:2px solid var(--rule24)!important}
+.ts th.ps,.ts td.ps{border-left:2px solid var(--rule6)!important}
+.ts thead th.col{cursor:context-menu}
+.ts thead th.col:hover{background:#c6e6e4}
+.ts thead th.col .colmenu{display:none;position:absolute;right:1px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:1px solid #9bb;border-radius:3px;background:#fff;color:#0f5f78;font-size:9px;line-height:12px;padding:0;cursor:pointer}
+.ts thead th.col:hover .colmenu{display:block}
+.addbtn{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border:0;background:var(--accent);color:#fff;font-size:12px;font-weight:700;line-height:1;padding:0;cursor:pointer}
+.addbtn:hover{background:#0b5872}
+.ts td.slot{cursor:copy;background:repeating-linear-gradient(135deg,#cfe9e7 0 6px,#c3e1df 6px 12px);border-left:1px dashed var(--accent)}
+.ts td.slot:hover{background:#a9d6e0}
+.ts thead th.slot{border-left:1px dashed var(--accent);padding:0}
+.ts{user-select:none}
+.ts td.rng{background:#cfe4ff}
+.ts td.rng.sel{background:var(--sel)}
+.sheet-add{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:90px;border:2px dashed var(--rule24);border-radius:6px;background:rgba(214,241,239,.55);color:#24403e;font-size:15px;cursor:pointer;margin-bottom:10px}
+.sheet-add:hover{background:var(--paper);border-style:solid}
+.sheet-add b{font-size:28px;font-weight:400;line-height:1}
+.ts td{height:22px;border-left:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:cell;position:relative;color:var(--ink);font-weight:600}
+.ts td.sound{border-bottom-style:dashed}
+.ts td.cont::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid var(--hold);pointer-events:none}
+.ts td.sound.cont::after{left:3px}
+.ts td.sound.vch{text-align:center;font-weight:400;font-size:12px;padding:0;white-space:nowrap}
+.ts td.sound.vch:not(.wide){writing-mode:vertical-rl;text-orientation:upright}
+.ts td.lend::before{content:"";position:absolute;left:calc(50% - 6px);width:14px;bottom:1px;border-bottom:2px solid var(--hold);pointer-events:none}
+.ts td.sound.lend::before{left:1px}
+.ts tr.r6 td{border-bottom:1px solid var(--rule6)}
+.ts tr.r24 td{border-bottom:2px solid var(--rule24)}
+.ts td.fno{cursor:default;border-bottom-color:transparent;font-weight:400;font-size:11px;color:var(--frame);text-align:right;padding-right:4px;vertical-align:bottom;line-height:1}
+.ts tr.r6 td.fno{border-bottom:1px solid var(--rule6)}
+.ts tr.r24 td.fno{border-bottom:2px solid var(--rule24)}
+.ts td.fno .sec{position:absolute;left:3px;bottom:2px;font-size:10px}
+.ts td.off{background:var(--paper-off);cursor:not-allowed}
+.ts td.fno.off{background:var(--paper-off);color:#4d5f5e}
+.ts td.slot.off{background:var(--paper-off)}
+.ts td.ph{cursor:default}
+.ts td.ro{cursor:default;color:var(--muted)}
+.ts td.nullc{color:#4f6766;font-weight:400}
+.ts td.tick{font-size:14px}
+.ts td.sound.v{text-align:left;padding:0 4px;font-weight:400;font-size:11.5px}
+.ts.full-sound td.sound.v{text-overflow:clip}
+.ts td.sel{outline:2px solid var(--sel-line);outline-offset:-2px;background:var(--sel)}
+.ts td input{position:absolute;inset:0;width:100%;height:100%;border:0;outline:2px solid var(--accent);outline-offset:-2px;text-align:center;background:#fffde6;font:inherit;font-weight:600;padding:0 2px;z-index:3}
+.ts td.sound input{width:260px;text-align:left;box-shadow:0 2px 8px #0004}
+
+.cw-action{width:34px}.cw-cell{width:34px}.cw-sound{width:120px}.cw-cam{width:70px}.cw-other{width:46px}.cw-fno{width:58px}.cw-ph{width:34px}.cw-slot{width:20px}.cw-slot2{width:26px}
+
+/* context menu, picker, toast */
+.menu{position:fixed;z-index:50;background:#fff;border:1px solid #9aa;border-radius:5px;box-shadow:0 4px 14px #0004;padding:4px 0;min-width:190px;font-size:13px}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 14px;cursor:pointer}
+.menu button:hover:not(:disabled){background:#e3f1f0}
+.menu button:disabled{color:#aaa;cursor:default}
+.menu hr{border:0;border-top:1px solid #ddd;margin:4px 0}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:60}
+.modal-box{background:#fff;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.35);min-width:360px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column}
+.modal-box h2{margin:0;padding:14px 18px 4px;font-size:15px}
+.modal-box p{margin:0;padding:0 18px 10px;font-size:12px;color:#666}
+.tl-list{overflow:auto;padding:0 12px;display:flex;flex-direction:column;gap:6px}
+.tl-list button{display:flex;justify-content:space-between;gap:24px;align-items:center;text-align:left;border:1px solid #bbb;background:#f7f7f7;border-radius:5px;padding:10px 12px;font-size:14px;cursor:pointer}
+.tl-list button:hover,.tl-list button:focus{background:#dff0ef;border-color:var(--accent);outline:0}
+.tl-list small{color:#666;font-size:12px;white-space:nowrap}
+.modal-foot{display:flex;justify-content:flex-end;padding:12px 18px}
+.modal-foot button{border:1px solid #999;background:#fff;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer}
+.drop{position:fixed;inset:0;background:rgba(15,40,45,.5);display:flex;align-items:center;justify-content:center;z-index:40}
+.dropbox{background:#fff;border:2px dashed #6b8;border-radius:8px;padding:40px 64px;font-size:18px}
+.toast{position:fixed;right:18px;bottom:40px;background:#252525;color:#fff;padding:9px 14px;border-radius:5px;font-size:12px;box-shadow:0 2px 8px #0006;opacity:0;transform:translateY(8px);transition:.15s;z-index:70;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.foot{flex:none;height:26px;background:#e8f0ef;border-top:1px solid #9bb;display:flex;align-items:center;gap:16px;padding:0 12px;font-size:12px;color:#344}
+.foot .keys{margin-left:auto;color:#678;white-space:nowrap}
+.foot{white-space:nowrap;overflow:hidden}
+.foot #where{overflow:hidden;text-overflow:ellipsis}
+.keysbtn{border:1px solid #9bb;background:#fff;border-radius:4px;padding:1px 8px;font-size:12px;cursor:pointer}
+.keysbtn:hover{background:#dff0ef}
+.keylist{padding:0 18px 6px;overflow:auto;font-size:13px}
+.keylist table{border-collapse:collapse;width:100%}
+.keylist td{padding:4px 8px;border-bottom:1px solid #e3eaea;vertical-align:top}
+.keylist td:first-child{white-space:nowrap;font-family:Consolas,monospace;color:#0f5f78}
+.keylist h3{font-size:12px;color:#678;margin:12px 0 2px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <span class="app">🎞️ TDTS / XDTS Editor</span>
+  <span class="tb-sheets"><span class="tb-lbl">シート</span><span class="pager" id="pager"><button id="sheetPrev" title="前のシート（PageUp / Ctrl+↑）">◀</button><span id="sheetChips"></span><button id="sheetNext" title="次のシート（PageDown / Ctrl+↓）">▶</button></span></span>
+  <span class="status" id="status"></span>
+</div>
+<div class="ribbon">
+  <div class="rgroup">
+    <div class="rbody">
+      <button class="big" id="btnNew" title="空のシートを作る"><i>📄</i>新規</button>
+      <label class="big" title="XDTS / TDTS / CLIP を開く（Ctrl+O）"><i>📂</i>開く<input id="file" type="file" accept=".tdts,.xdts,.clip,.json,text/plain"></label>
+      <button class="big" id="btnSave" title="保存（Ctrl+S）"><i>💾</i>保存</button>
+    </div>
+    <div class="rcap">ファイル</div>
+  </div>
+  <div class="rgroup">
+    <div class="rbody">
+      <button class="big" id="btnUndo" title="元に戻す（Ctrl+Z）" disabled><i>↩️</i>元に戻す</button>
+      <button class="big" id="btnRedo" title="やり直し（Ctrl+Y）" disabled><i>↪️</i>やり直し</button>
+      <div class="stack">
+        <button class="small" id="btnCopy" title="コピー（Ctrl+C）"><i>📋</i>コピー</button>
+        <button class="small" id="btnCut" title="切り取り（Ctrl+X）"><i>✂️</i>切り取り</button>
+        <button class="small" id="btnPaste" title="貼り付け（Ctrl+V）"><i>📌</i>貼り付け</button>
+      </div>
+      <div class="stack">
+        <button class="small" id="btnDelete" title="選択範囲の入力を削除（Delete）"><i>🗑️</i>削除</button>
+        <button class="small" id="btnSelAll" title="全部選択（Ctrl+A）"><i>🔲</i>全選択</button>
+      </div>
+    </div>
+    <div class="rcap">編集</div>
+  </div>
+  <div class="rgroup">
+    <div class="rbody">
+      <div class="stack">
+        <span class="rlbl" title="Enterで確定したときに下へ進むコマ数">打ち（Enterで進む）</span>
+        <span class="seg" id="stepSeg"><button data-step="1" title="1コマ打ち（Alt+1）">1</button><button data-step="2" title="2コマ打ち（Alt+2）">2</button><button data-step="3" title="3コマ打ち（Alt+3）">3</button><button data-step="4" title="4コマ打ち（Alt+4）">4</button><button data-step="auto" title="自動：その列で直前に入れた間隔と同じだけ進む（Alt+0）">自動</button></span>
+      </div>
+      <div class="stack">
+        <button class="small" id="btnSeq" title="選択範囲に、打ち数ごとに連番を入れる"><i>🔢</i>連番</button>
+        <button class="small" id="btnSoundLen" title="セリフ列で、セリフの始まりから新しい終わりまで範囲を選んで押すと、その長さにする（Alt+L）"><i>↕️</i>セリフの長さ</button>
+      </div>
+      <div class="stack">
+        <button class="small" id="btnInsFrames" title="選択した列の、選択範囲の高さ分コマを挿入して後ろをずらす（Insert）"><i>⤵️</i>コマ挿入</button>
+        <button class="small" id="btnDelFrames" title="選択した列の、選択範囲のコマを削除して後ろを詰める（Ctrl+Delete）"><i>⤴️</i>コマ削除</button>
+      </div>
+    </div>
+    <div class="rcap">入力</div>
+  </div>
+  <div class="rgroup">
+    <div class="rbody">
+      <button class="big" id="colAdd" title="列を追加"><i>➕</i>列を追加 ▾</button>
+      <button class="big" id="sheetAdd" title="最後にシートを1枚追加（+6秒）"><i>📑</i>シート追加</button>
+      <div class="stack">
+        <button class="small" id="colDel" title="選択している列を削除（列見出しのメニューからも削除できます）"><i>❌</i>列を削除</button>
+        <button class="small" id="sheetDel" title="最後のシートを削除（−6秒）"><i>➖</i>シート削除</button>
+      </div>
+    </div>
+    <div class="rcap">列・シート</div>
+  </div>
+  <div class="rgroup">
+    <div class="rbody">
+      <div class="optgrid">
+        <span class="rlbl">表示</span>
+        <span class="seg"><button data-view="paper" class="on" title="紙のタイムシートと同じ 6秒/ページ">🗒️ 紙</button><button data-view="continuous" title="全コマを1列で表示">📜 1列</button></span>
+        <span class="rlbl">列</span>
+        <span class="seg multi" id="visToggles"></span>
+        <span class="rlbl">コマ番号</span>
+        <span class="seg"><button data-fm="continuous" class="on" title="前のシートから番号を引き継ぐ">通し</button><button data-fm="page" title="シートごとに1から振り直す">シートごと</button></span>
+        <span class="rlbl" title="ACTION／CELLの列見出しを右クリックしたときの動き">見出し右クリック</span>
+        <span class="seg"><button data-hrc="menu" title="右クリックでメニューを開く">メニュー</button><button data-hrc="fusion" title="ACTION／CELLの見出しを右クリックすると、すぐFusion設定をコピーする（メニューは見出しの ▾ で開く）">Fusionコピー</button></span>
+      </div>
+    </div>
+    <div class="rcap">表示</div>
+  </div>
+</div>
+<div class="main" id="main"><div class="sheet" id="app"></div></div>
+<div class="foot"><span id="where">—</span><span class="keys">数字で入力　Enterで確定　右クリックでメニュー</span><button id="btnKeys" class="keysbtn">⌨️ ショートカット一覧</button></div>
+<div id="drop" class="drop hidden"><div class="dropbox">XDTS / TDTS / CLIP ファイルをここにドロップ</div></div>
+<div id="menu" class="menu hidden"></div>
+<div id="tlPicker" class="modal hidden"><div class="modal-box"><h2>タイムラインを選択</h2><p id="tlPickerNote"></p><div id="tlList" class="tl-list"></div><div class="modal-foot"><button id="tlCancel">キャンセル</button></div></div></div>
+<div id="toast" class="toast"></div>
+<div id="keysDlg" class="modal hidden"><div class="modal-box" style="width:560px"><h2>⌨️ ショートカット一覧</h2><div class="keylist">
+<h3>入力</h3><table>
+<tr><td>数字・文字</td><td>選んだセルにそのまま入力を始める</td></tr>
+<tr><td>Enter / F2 / ダブルクリック</td><td>入力欄を開く（日本語入力はここから）</td></tr>
+<tr><td>Enter（入力中）</td><td>確定して「打ち」の数だけ下へ進む</td></tr>
+<tr><td>Shift+Enter / Esc</td><td>確定して1コマ上へ ／ 入力をやめる</td></tr>
+<tr><td>0</td><td>×（空セル）</td></tr><tr><td>-</td><td>継続</td></tr>
+<tr><td>[話者]本文</td><td>セリフ列で話者と本文に分けて入る</td></tr>
+<tr><td>範囲を選んでセリフを入力</td><td>選んだ範囲がそのセリフの長さになる</td></tr>
+<tr><td>Alt+L</td><td>セリフの始まりから選んだ範囲の下まで、セリフの長さを合わせる（伸ばす・縮める）</td></tr>
+<tr><td>Alt+1〜4 / Alt+0</td><td>打ち数を 1〜4コマ ／ 自動 にする</td></tr></table>
+<h3>選択・編集</h3><table>
+<tr><td>矢印</td><td>移動（Alt+↑↓ で6コマずつ）</td></tr>
+<tr><td>Shift+矢印 / ドラッグ</td><td>範囲選択</td></tr>
+<tr><td>Ctrl+A</td><td>全部選択</td></tr>
+<tr><td>Ctrl+C / X / V</td><td>コピー ／ 切り取り ／ 貼り付け</td></tr>
+<tr><td>Delete</td><td>選んだセル（範囲）の入力を消す</td></tr>
+<tr><td>Insert / Shift+Insert</td><td>選んだ列 ／ 全列に、選択の高さ分コマを挿入</td></tr>
+<tr><td>Ctrl+Delete / Ctrl+Shift+Delete</td><td>選んだ列 ／ 全列のコマを削除して詰める</td></tr>
+<tr><td>Ctrl+Z / Ctrl+Y</td><td>元に戻す ／ やり直し</td></tr></table>
+<h3>移動・ファイル</h3><table>
+<tr><td>PageUp / PageDown</td><td>前 ／ 次のシート（Ctrl+↑↓ でも可）</td></tr>
+<tr><td>Ctrl+Home / Ctrl+End</td><td>最初 ／ 最後のシート</td></tr>
+<tr><td>Ctrl+O / Ctrl+S</td><td>開く ／ 保存</td></tr></table>
+</div><div class="modal-foot"><button id="keysClose">閉じる</button></div></div></div>
+<div id="restore" class="modal hidden"><div class="modal-box"><h2>保存していない作業があります</h2><p id="restoreNote"></p><div class="modal-foot" style="gap:8px"><button id="restoreNo">破棄して新規で始める</button><button id="restoreYes" style="background:#0f6e8c;color:#fff;border-color:#0f6e8c">復元する</button></div></div></div>
+<script>
+// CLIP STUDIO .clip -> XDTS ------------------------------------------------
+// Reads the SQLite database embedded in a .clip file and rebuilds the XDTS
+// that CLIP STUDIO PAINT EX would export for one timeline (verified to be
+// byte-identical against EX output). No external libraries.
+const ClipReader=(()=>{
+  const NULL='SYMBOL_NULL_CELL',HYPHEN='SYMBOL_HYPHEN',KIND_ANIM=2000,KIND_CAMERA=2005;
+  const td=new TextDecoder('utf-8');
+  const ascii=(u8,p,n)=>String.fromCharCode(...u8.subarray(p,p+n));
+  const be64=(dv,p)=>Number(dv.getBigUint64(p,false));
+  const str=v=>typeof v==='string'?v:td.decode(v);
+
+  // .clip container: 'CSFCHUNK' header, then [8-byte name][BE u64 size][body] chunks
+  function chunks(u8){
+    if(ascii(u8,0,8)!=='CSFCHUNK')throw new Error('CLIPファイルではありません');
+    const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+    let p=24,sqlite=null;
+    while(p+16<=u8.length){
+      const name=ascii(u8,p,8),size=be64(dv,p+8);
+      if(name==='CHNKSQLi')sqlite=u8.subarray(p+16,p+16+size);
+      p+=16+size;
+    }
+    if(!sqlite)throw new Error('CLIP内にデータベースが見つかりません');
+    return {dv,sqlite};
+  }
+
+  // Minimal read-only SQLite reader (rowid tables only) ---------------------
+  function openSqlite(db){
+    const dv=new DataView(db.buffer,db.byteOffset,db.byteLength);
+    let pageSize=dv.getUint16(16);if(pageSize===1)pageSize=65536;
+    const usable=pageSize-db[20];
+    const page=n=>(n-1)*pageSize;
+    function varint(p){let v=0;for(let i=0;i<8;i++){const b=db[p+i];v=v*128+(b&127);if(b<128)return [v,i+1]}return [v*256+db[p+8],9]}
+    function payload(p,n){
+      // local part + overflow chain (table b-tree leaf rules)
+      const X=usable-35;
+      if(n<=X)return db.subarray(p,p+n);
+      const M=Math.floor((usable-12)*32/255)-23,K=M+(n-M)%(usable-4),local=K<=X?K:M;
+      const out=new Uint8Array(n);out.set(db.subarray(p,p+local));
+      let got=local,ov=dv.getUint32(p+local);
+      while(got<n&&ov){const o=page(ov),take=Math.min(n-got,usable-4);out.set(db.subarray(o+4,o+4+take),got);got+=take;ov=dv.getUint32(o)}
+      return out;
+    }
+    function record(b){
+      const rdv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+      const vi=p=>{let v=0;for(let i=0;i<8;i++){const x=b[p+i];v=v*128+(x&127);if(x<128)return [v,i+1]}return [v*256+b[p+8],9]};
+      const [hsz,q]=vi(0),types=[];let hp=q;
+      while(hp<hsz){const [t,l]=vi(hp);types.push(t);hp+=l}
+      let p=hsz;const vals=[];
+      for(const t of types){
+        let v=null;
+        if(t===0)v=null;
+        else if(t>=1&&t<=6){const n=[0,1,2,3,4,6,8][t];let x=b[p]&0x80?-1n:0n;for(let i=0;i<n;i++)x=(x<<8n)|BigInt(b[p+i]);x=BigInt.asIntN(n*8,x);v=Number(x);p+=n}
+        else if(t===7){v=rdv.getFloat64(p);p+=8}
+        else if(t===8)v=0;else if(t===9)v=1;
+        else if(t>=12&&t%2===0){const n=(t-12)/2;v=b.slice(p,p+n);p+=n}
+        else if(t>=13){const n=(t-13)/2;v=td.decode(b.subarray(p,p+n));p+=n}
+        vals.push(v);
+      }
+      return vals;
+    }
+    function scan(root,cb){
+      const o=page(root),h=root===1?100:0,type=db[o+h],n=dv.getUint16(o+h+3);
+      if(type===0x05){
+        for(let i=0;i<n;i++)scan(dv.getUint32(o+dv.getUint16(o+h+12+i*2)),cb);
+        scan(dv.getUint32(o+h+8),cb);
+      }else if(type===0x0D){
+        for(let i=0;i<n;i++){
+          let p=o+dv.getUint16(o+h+8+i*2);
+          const [len,a]=varint(p);p+=a;const [rowid,b]=varint(p);p+=b;
+          cb(record(payload(p,len)),rowid);
+        }
+      }else throw new Error('未対応のSQLiteページ種別 '+type);
+    }
+    const tables={};
+    scan(1,r=>{if(r[0]==='table')tables[r[1]]={root:r[3],sql:r[4]}});
+    function columns(sql){
+      const body=sql.slice(sql.indexOf('(')+1,sql.lastIndexOf(')'));
+      return body.split(',').map(s=>s.trim().split(/\s+/)[0].replace(/^["`\[]|["`\]]$/g,''));
+    }
+    // rows as objects; columns added later by ALTER TABLE may be missing (=null)
+    function rows(name){
+      const t=tables[name];if(!t)return [];
+      const cols=columns(t.sql),out=[];
+      scan(t.root,r=>{const o={};cols.forEach((c,i)=>o[c]=i<r.length?r[i]:null);out.push(o)});
+      return out;
+    }
+    return {rows};
+  }
+
+  // External chunk: CHNKExta [size] [BE u64 idlen][id][BE u64 datalen][LE u32 raw][zlib]
+  async function external(u8,dv,offset){
+    let p=offset+16;const idlen=be64(dv,p);p+=8+idlen;
+    const n=be64(dv,p);p+=8;
+    const body=u8.subarray(p,p+n);
+    if(body[4]!==0x78)return body;
+    const ds=new DecompressionStream('deflate');
+    const out=new Response(new Blob([body.subarray(4)]).stream().pipeThrough(ds));
+    return new Uint8Array(await out.arrayBuffer());
+  }
+
+  // CELSYS 'cmt 0100binc' tree
+  function parseBinc(d){
+    if(ascii(d,0,12)!=='cmt 0100binc')throw new Error('未対応のトラック形式 '+ascii(d,0,12));
+    const dv=new DataView(d.buffer,d.byteOffset,d.byteLength);
+    let p=16;const u32=()=>{const v=dv.getUint32(p,true);p+=4;return v};
+    const n=u32(),strs=[];
+    for(let i=0;i<n;i++){const l=d[p++];strs.push(td.decode(d.subarray(p,p+l)));p+=l}
+    const vec={Float2:2,Float3:3,Quat:4,Matrix44:16};
+    function val(T){
+      if(T==='null')return null;
+      if(T==='Byte'||T==='SByte')return d[p++];
+      if(T==='UInt16'){const v=dv.getUint16(p,true);p+=2;return v}
+      if(T==='Int16'){const v=dv.getInt16(p,true);p+=2;return v}
+      if(T==='UInt32'){return u32()}
+      if(T==='Int32'){const v=dv.getInt32(p,true);p+=4;return v}
+      if(T==='Single'){const v=dv.getFloat32(p,true);p+=4;return v}
+      if(T==='Double'){const v=dv.getFloat64(p,true);p+=8;return v}
+      if(T==='String')return strs[u32()];
+      if(T.endsWith('[]')){const k=u32(),b=T.slice(0,-2),a=[];for(let i=0;i<k;i++)a.push(val(b));return a}
+      if(vec[T]){const a=[];for(let i=0;i<vec[T];i++){a.push(dv.getFloat32(p,true));p+=4}return a}
+      throw new Error('未知の型 '+T);
+    }
+    function node(){
+      const name=strs[u32()],value=val(strs[u32()]),attrs={},kids=[];
+      for(let i=u32();i>0;i--){const k=strs[u32()];attrs[k]=strs[u32()]}
+      for(let i=u32();i>0;i--)kids.push(node());
+      return {name,value,attrs,kids};
+    }
+    return node();
+  }
+  function* find(n,name){if(n.name===name)yield n;for(const k of n.kids)yield* find(k,name)}
+  const kv=n=>Object.fromEntries(n.kids.map(k=>[k.name,k.value]));
+
+  function clipsOf(root){
+    const out=[];
+    for(const ac of find(root,'ActionNodeClip')){
+      const k=Object.fromEntries(ac.kids.map(x=>[x.name,x]));
+      const tc=kv(k.TimeClip),mc=kv(k.MotionClip),keys=[];
+      for(const fc of find(ac,'FCurve')){
+        if(fc.attrs.Type!=='ImageCelName')continue;
+        const c=kv(fc);c.Frame.forEach((f,i)=>keys.push([f,c.Tag[i]]));
+      }
+      if(keys.length){keys.sort((a,b)=>a[0]-b[0]||(a[1]<b[1]?-1:a[1]>b[1]?1:0));out.push([tc.Start,tc.End,mc.Start,tc.Rate,keys])}
+    }
+    return out.sort((a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2]);
+  }
+  function celAt(clips,t){
+    for(let ci=0;ci<clips.length;ci++){
+      const [s,e,ls,,keys]=clips[ci];
+      if(s<=t&&t<e){const lt=t-s+ls;let ki=0;keys.forEach(([kt],i)=>{if(kt<=lt+1e-6)ki=i});return [ci,ki,keys[ki][1]]}
+    }
+    return null;
+  }
+  const cell=(frame,values)=>({data:[{id:0,values}],frame});
+  function trackFrames(clips,field,sf,fps){
+    if(!clips.length)return field===0?[cell(0,[NULL])]:[];
+    const rate=clips[0][3];
+    const last=Math.ceil(Math.max(...clips.map(c=>c[1]))/rate*fps-sf-1e-6);
+    const frames=[];let prev=null;
+    for(let f=0;f<last;f++){
+      const at=celAt(clips,(sf+f)/fps*rate);
+      if(field===0){const v=at?at[2]:NULL;if(v!==prev)frames.push(cell(f,[v]));prev=v}
+      else if(at){
+        const key=at[0]+':'+at[1];
+        if(key!==prev){const m=/^\[(.*?)\]([\s\S]*)$/.exec(at[2]);frames.push(cell(f,m?[m[1],m[2]]:[at[2]]))}
+        else frames.push(cell(f,[HYPHEN]));
+        prev=key;
+      }else prev=null;
+    }
+    if(field===0)frames.push(cell(last,[NULL]));
+    return frames;
+  }
+  const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+
+  // open(.clip bytes) -> {timelines:[{name,fps,duration}], build(index) -> Promise<xdts object>}
+  function open(buffer){
+    const u8=new Uint8Array(buffer),{dv,sqlite}=chunks(u8),db=openSqlite(sqlite);
+    const ext=new Map(db.rows('ExternalChunk').map(r=>[str(r.ExternalID),r.Offset]));
+    const L=db.rows('Layer'),byId=new Map(L.map(r=>[r.MainId,r]));
+    const byUuid=new Map(L.filter(r=>r.LayerUuid).map(r=>[r.LayerUuid.replace(/-/g,'').toUpperCase(),r]));
+    const parent=new Map();
+    for(const r of L){let c=r.LayerFirstChildIndex;while(c){parent.set(c,r.MainId);c=byId.get(c).LayerNextIndex}}
+    const visible=id=>{while(id){if(!(byId.get(id).LayerVisibility&1))return false;id=parent.get(id)}return true};
+    // stored sibling order is bottom -> top == XDTS left -> right
+    const order=new Map();
+    const walk=i=>{while(i){order.set(i,order.size);walk(byId.get(i).LayerFirstChildIndex);i=byId.get(i).LayerNextIndex}};
+    walk(byId.get(db.rows('Canvas')[0].CanvasRootFolder).LayerFirstChildIndex);
+    const tracks=new Map(db.rows('Track').map(r=>[r.MainId,r]));
+    const tls=db.rows('TimeLine');
+    // TimeLine rows are a linked list from AnimationCutBank.FirstTimeLine
+    const tlById=new Map(tls.map(r=>[r.MainId,r])),list=[];
+    let t=db.rows('AnimationCutBank')[0]?.FirstTimeLine;
+    while(t&&tlById.has(t)&&!list.includes(tlById.get(t))){list.push(tlById.get(t));t=tlById.get(t).NextTimeLine}
+    for(const r of tls)if(!list.includes(r))list.push(r);
+    async function build(i){
+      const tl=list[i],sf=tl.StartFrame,fps=tl.FrameRate,found=[];
+      for(let id=tl.FirstTrack;id;){
+        const tr=tracks.get(id);id=tr.TrackNextIndex;
+        const lay=byUuid.get(hex(tr.LayerUuidWithTrack||[]));
+        if((tr.TrackKind!==KIND_ANIM&&tr.TrackKind!==KIND_CAMERA)||!lay||!visible(lay.MainId))continue;
+        let field,frames;
+        if(tr.TrackKind===KIND_CAMERA){field=5;frames=[]}
+        else{
+          field=/^S[0-9]$/.test(lay.LayerName)?3:0;
+          const mixer=await external(u8,dv,ext.get(str(tr.TrackActionMixer)));
+          frames=trackFrames(clipsOf(parseBinc(mixer)),field,sf,fps);
+        }
+        found.push({ord:order.get(lay.MainId)??Infinity,field,name:lay.LayerName,frames});
+      }
+      found.sort((a,b)=>a.ord-b.ord);
+      const fields=[],headers=[];
+      for(const fid of [0,3,5]){
+        const items=found.filter(x=>x.field===fid);if(!items.length)continue;
+        fields.push({tracks:items.map((x,i)=>({trackNo:i,frames:x.frames})),fieldId:fid});
+        headers.push({names:items.map(x=>x.name),fieldId:fid});
+      }
+      const duration=Math.round(tl.EndFrame-sf);
+      return {timeTables:[{duration,fields,name:tl.TimeLineName,timeTableHeaders:headers}],version:5,
+              header:{cut:String(tl.CutIndexForName),scene:String(tl.SceneIndexForName)}};
+    }
+    return {timelines:list.map(r=>({name:r.TimeLineName,fps:r.FrameRate,duration:Math.round(r.EndFrame-r.StartFrame)})),build};
+  }
+  // CSP's own layout: one token per line, no indent, empty arrays as "[\n]"
+  function dump(o){
+    if(Array.isArray(o))return '[\n'+o.map(dump).join(',\n')+(o.length?'\n]':']');
+    if(o&&typeof o==='object')return '{\n'+Object.entries(o).map(([k,v])=>JSON.stringify(k)+':'+dump(v)).join(',\n')+'\n}';
+    return JSON.stringify(o);
+  }
+  const toText=x=>'exchangeDigitalTimeSheet Save Data\n'+dump(x);
+  return {open,toText};
+})();
+
+
+// ---------------------------------------------------------------------------
+// Document model. The file JSON is edited in place: frames stay sparse change
+// points, unknown properties/fields are kept as they are.
+// ---------------------------------------------------------------------------
+const FPS=24,PAGE=144,HALF=72;
+const SYM={NULL:'SYMBOL_NULL_CELL',HYPHEN:'SYMBOL_HYPHEN',T1:'SYMBOL_TICK_1',T2:'SYMBOL_TICK_2'};
+const prefix={xdts:'exchangeDigitalTimeSheet Save Data',tdts:'toeiDigitalTimeSheet Save Data'};
+const state={root:null,format:'xdts',fileName:'',dirty:false,history:[],future:[],sel:null,editing:false,view:'paper',soundFull:false,step:loadPref('step','1'),hidden:loadHidden(),frameMode:'continuous',hdrRc:loadPref('hdrRc','menu')};
+const $=id=>document.getElementById(id);
+// which column kinds are hidden (display only; data is kept and saved)
+const VIS_KINDS=[{kind:'action',label:'ACTION',icon:'🅰️'},{kind:'cell',label:'CELL',icon:'🔤',tdtsOnly:true},{kind:'sound',label:'セリフ',icon:'💬'},{kind:'cam',label:'CAM',icon:'🎥'}];
+function loadPref(k,d){try{return localStorage.getItem('tsEditor.'+k)??d}catch{return d}}
+function savePref(k,v){try{localStorage.setItem('tsEditor.'+k,v)}catch{}}
+function loadHidden(){try{return new Set(JSON.parse(localStorage.getItem('tsEditor.hidden')||'[]'))}catch{return new Set()}}
+function saveHidden(){try{localStorage.setItem('tsEditor.hidden',JSON.stringify([...state.hidden]))}catch{}}
+const clone=x=>JSON.parse(JSON.stringify(x));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function blankDoc(){
+  return {header:{cut:'1',scene:'1'},timeTables:[{fields:[
+      {fieldId:0,tracks:[{trackNo:0,frames:[]}]},
+      {fieldId:3,tracks:[{trackNo:0,frames:[]}]},
+      {fieldId:5,tracks:[{trackNo:0,frames:[]}]}],
+    duration:PAGE,name:'',
+    timeTableHeaders:[{fieldId:0,names:['A']},{fieldId:3,names:['S1']},{fieldId:5,names:['1']}]}],version:5};
+}
+const isTdts=r=>Array.isArray(r?.timeSheets);
+function table(){return state.format==='tdts'?state.root.timeSheets[0].timeTables[0]:state.root.timeTables[0]}
+function docHeader(){return state.format==='tdts'?(state.root.timeSheets[0].header||={}):(state.root.header||={})}
+function fieldsArr(){return table().fields||=[]}
+function headersArr(){return table().timeTableHeaders||=[]}
+function field(fid,create){let f=fieldsArr().find(x=>x.fieldId===fid);if(!f&&create){f={fieldId:fid,tracks:[]};fieldsArr().push(f)}return f}
+function names(fid,create){let h=headersArr().find(x=>x.fieldId===fid);if(!h&&create){h={fieldId:fid,names:[]};headersArr().push(h)}return h?(h.names||=[]):[]}
+function track(fid,tr,create){const f=field(fid,create);if(!f)return null;let t=(f.tracks||=[]).find(x=>x.trackNo===tr);if(!t&&create){t={trackNo:tr,frames:[]};f.tracks.push(t)}return t}
+function colCount(fid){const f=field(fid);return Math.max(names(fid).length,...((f&&f.tracks)||[]).map(t=>t.trackNo+1),0)}
+function duration(){return Math.max(1,+table().duration||1)}
+const editable=fid=>[0,3,4,5].includes(fid);
+
+// Column groups laid out like the paper sheet: ACTION | frame no. | CELL (S + cells) | CAM
+function groups(){
+  const tdts=state.format==='tdts',known=[0,3,4,5];
+  const g=[
+    {label:'ACTION',parts:[{fid:0,kind:'action'}],add:[{fid:0,kind:'action',text:'+'}]},
+    {frameCol:true},
+    {label:'CELL',parts:[{fid:3,kind:'sound'},...(tdts?[{fid:4,kind:'cell'}]:[])],add:[{fid:3,kind:'sound',text:'+S'},...(tdts?[{fid:4,kind:'cell',text:'+'}]:[])]},
+    {label:'CAM',parts:[{fid:5,kind:'cam'}],add:[{fid:5,kind:'cam',text:'+'}]},
+  ];
+  const others=[...new Set([...fieldsArr().map(f=>f.fieldId),...headersArr().map(h=>h.fieldId)])].filter(id=>!known.includes(id)).sort((a,b)=>a-b);
+  for(const id of others)g.push({label:'FIELD '+id,parts:[{fid:id,kind:'other'}],add:[]});
+  return g;
+}
+// Flat list of columns (in display order) with group/part boundaries marked
+function layout(){
+  const cols=[],heads=[];
+  for(const g0 of groups()){
+    const g=g0.frameCol?g0:{...g0,parts:g0.parts.filter(p=>!state.hidden.has(p.kind)),add:(g0.add||[]).filter(a=>!state.hidden.has(a.kind))};
+    if(!g.frameCol&&!g.parts.length)continue;
+    if(g.frameCol){cols.push({frameCol:true,gs:true});heads.push({frameCol:true,span:1});continue}
+    let n=0,first=true;
+    for(const p of g.parts){
+      const c=colCount(p.fid),nm=names(p.fid);
+      for(let tr=0;tr<c;tr++){cols.push({fid:p.fid,tr,kind:p.kind,name:nm[tr]??String(tr+1),gs:first,ps:!first&&tr===0});first=false;n++}
+    }
+    if(!n){cols.push({ph:true,gs:true});n=1}
+    for(const a of g.add){cols.push({slot:a});n++}
+    heads.push({label:g.label,span:n});
+  }
+  return {cols,heads};
+}
+
+// ---- values ---------------------------------------------------------------
+function sortedFrames(t){return (t?.frames||[]).slice().sort((a,b)=>a.frame-b.frame)}
+function pointAt(t,frame){return (t?.frames||[]).find(x=>x.frame===frame)}
+function values(p){return p?.data?.[0]?.values||[]}
+function showValue(v,kind){
+  if(!v.length)return '';
+  const s=v[0];
+  const m={[SYM.NULL]:'×',[SYM.T1]:'○',[SYM.T2]:'●',[SYM.HYPHEN]:'-'};
+  if(m[s])return m[s];
+  if(kind==='sound'&&v.length>1)return v[0]?`【${v[0]}】${v.slice(1).join(' ')}`:v.slice(1).join(' ');
+  return v.join(' ');
+}
+// Per-frame display of one column: [{text,cls}] for 0..duration-1
+function columnDisplay(col,dur){
+  const t=track(col.fid,col.tr),out=new Array(dur);
+  const pts=sortedFrames(t);let pi=0,active=false;
+  // Dialogue/camera lines last only while SYMBOL_HYPHEN continues (XDTS spec);
+  // draw them as a line from the start frame down to the last hyphen frame.
+  // Dialogue follows Toei Digital Timesheet: [speaker] in the first cell, then the
+  // text spread evenly, one character per cell, down to the end frame.
+  if(col.kind==='sound'){
+    const at=new Map(pts.map(p=>[p.frame,p]));
+    const isCont=f=>values(at.get(f))[0]===SYM.HYPHEN;
+    for(let f=0;f<dur;f++)out[f]={text:'',cls:''};
+    for(let f=0;f<dur;f++){
+      const p=at.get(f),v=values(p),s=v[0]??'';
+      if(!p||s===''||s===SYM.HYPHEN)continue;
+      if(s===SYM.NULL){out[f]={text:'×',cls:'nullc'};continue}
+      let end=f;while(end+1<dur&&isCont(end+1))end++;
+      const who=v.length>1?v[0]:'',body=[...(v.length>1?v.slice(1).join(''):v.join(' '))],title=v.join(' / ');
+      for(let g=f;g<=end;g++)out[g]={text:'',cls:g===f?'v lstart':'cont',title};
+      out[end].cls+=' lend';
+      // cells that carry the text: after the speaker cell, or from the start when there is no speaker
+      let from=f;
+      if(who){out[f].text=`[${who}]`;if(end>f)from=f+1;else{out[f].text+=body.join('');continue}}
+      const m=end-from+1,n=body.length;
+      if(n<=m){for(let i=0;i<n;i++){const g=from+(n===1?0:Math.round(i*(m-1)/(n-1)));out[g].text=body[i];out[g].cls+=' vch'}}
+      else for(let j=0;j<m;j++){const t=body.slice(Math.floor(j*n/m),Math.floor((j+1)*n/m));out[from+j].text=t.join('');out[from+j].cls+=t.length>1?' vch wide':' vch'}
+      f=end;
+    }
+    return out;
+  }
+  if(col.kind==='cam'){
+    const at=new Map(pts.map(p=>[p.frame,p]));
+    const isCont=f=>values(at.get(f))[0]===SYM.HYPHEN;
+    let cur=null;
+    for(let f=0;f<dur;f++){
+      const p=at.get(f),v=values(p),s=v[0]??'';
+      if(p&&s===SYM.HYPHEN&&cur!==null)out[f]={text:'',cls:'cont'+(isCont(f+1)?'':' lend'),title:cur};
+      else if(p&&s!==''&&s!==SYM.HYPHEN&&s!==SYM.NULL){cur=v.join(' / ');out[f]={text:showValue(v,col.kind),cls:'v lstart'+(isCont(f+1)?'':' lend'),title:cur}}
+      else{cur=null;out[f]={text:p&&s===SYM.NULL?'×':'',cls:p&&s===SYM.NULL?'nullc':''}}
+    }
+    return out;
+  }
+  for(let f=0;f<dur;f++){
+    while(pi<pts.length&&pts[pi].frame<f)pi++;
+    const p=pi<pts.length&&pts[pi].frame===f?pts[pi]:null;
+    if(p){
+      const v=values(p),s=v[0]??'';
+      if(s===SYM.HYPHEN){out[f]={text:'',cls:active?'hold':''};continue}
+      if(s===SYM.NULL||s==='×'||s===''){active=false;out[f]={text:s===''?'':'×',cls:'nullc'};continue}
+      active=true;
+      out[f]={text:showValue(v,col.kind),cls:(s===SYM.T1||s===SYM.T2)?'tick v':'v',title:col.kind==='sound'?v.join(' / '):null};
+    }else out[f]={text:'',cls:active?'hold':''};
+  }
+
+  return out;
+}
+function normalizeInput(v,kind){
+  v=String(v??'').trim();
+  if(v==='')return null;
+  if(v==='0'||v==='×'||v==='x'||v==='X')return [SYM.NULL];
+  const m={'○':SYM.T1,'●':SYM.T2,'-':SYM.HYPHEN,'ー':SYM.HYPHEN};
+  if(m[v])return [m[v]];
+  if(kind==='sound'){const r=/^\[(.*?)\]([\s\S]*)$/.exec(v);if(r)return [r[1],r[2]]}
+  return [v];
+}
+function editText(p,kind){
+  const v=values(p);if(!v.length)return '';
+  const s=v[0];
+  if(s===SYM.NULL)return '×';if(s===SYM.T1)return '○';if(s===SYM.T2)return '●';if(s===SYM.HYPHEN)return '-';
+  if(kind==='sound'&&v.length>1)return `[${v[0]}]${v.slice(1).join('')}`;
+  return v.join(' ');
+}
+function setValue(fid,tr,frame,vals){
+  const t=track(fid,tr,true);names(fid,true);
+  const frames=sortedFrames(t),i=frames.findIndex(x=>x.frame===frame);
+  if(!vals){if(i>=0)frames.splice(i,1)}
+  else{
+    const old=i>=0?frames[i]:null;
+    const d=old?.data?.[0]?clone(old.data[0]):{id:0,values:[]};d.values=vals;
+    const e=old?{...old,data:[d,...old.data.slice(1)]}:{data:[d],frame};
+    if(i>=0)frames[i]=e;else{const k=frames.findIndex(x=>x.frame>frame);k<0?frames.push(e):frames.splice(k,0,e)}
+  }
+  t.frames=frames;
+}
+
+// ---- history ----------------------------------------------------------------
+function commit(fn){state.history.push(clone(state.root));if(state.history.length>200)state.history.shift();state.future=[];fn();state.dirty=true;render()}
+function undo(){if(!state.history.length)return;state.future.push(clone(state.root));state.root=state.history.pop();state.dirty=true;render()}
+function redo(){if(!state.future.length)return;state.history.push(clone(state.root));state.root=state.future.pop();state.dirty=true;render()}
+
+// ---- columns ------------------------------------------------------------------
+function defaultName(fid,kind){
+  const nm=names(fid);
+  if(kind==='sound'){for(let i=1;;i++)if(!nm.includes('S'+i))return 'S'+i}
+  if(kind==='cam'){for(let i=1;;i++)if(!nm.includes(String(i)))return String(i)}
+  const base=kind==='cell'?97:65;
+  for(let i=0;i<26;i++){const c=String.fromCharCode(base+i);if(!nm.includes(c))return c}
+  return String(nm.length+1);
+}
+function addColumn(fid,kind){
+  if(state.hidden.has(kind)){state.hidden.delete(kind);saveHidden()}
+  commit(()=>{
+    const tr=colCount(fid),nm=names(fid,true);
+    while(nm.length<tr)nm.push(String(nm.length+1));
+    nm.push(defaultName(fid,kind));track(fid,tr,true);
+    state.sel={fid,tr,frame:state.sel?.frame??0};
+  });
+  toast(`${groupLabel(fid)}に列「${names(fid)[colCount(fid)-1]}」を追加しました（見出しダブルクリックで名前変更）`);
+}
+function deleteColumn(fid,tr){deleteColumns([{fid,tr}])}
+function deleteColumns(list){
+  list=list.filter(c=>editable(c.fid));
+  if(!list.length){toast('削除できる列がありません');return}
+  const label=list.map(c=>names(c.fid)[c.tr]??c.tr+1).join('・');
+  // remove higher track numbers first so the remaining indices stay valid
+  list=list.slice().sort((a,b)=>a.fid-b.fid||b.tr-a.tr);
+  commit(()=>{
+    for(const {fid,tr} of list){
+      const f=field(fid);
+      if(f){f.tracks=(f.tracks||[]).filter(t=>t.trackNo!==tr);f.tracks.forEach(t=>{if(t.trackNo>tr)t.trackNo--})}
+      const n=names(fid);if(n.length>tr)n.splice(tr,1);
+      if(f&&!f.tracks.length&&!n.length){table().fields=fieldsArr().filter(x=>x!==f);table().timeTableHeaders=headersArr().filter(h=>h.fieldId!==fid)}
+    }
+    // keep a sensible selection: the column that now sits where the first deleted one was
+    const cols=navCols(),frame=state.sel?.frame??0,first=list[list.length-1];
+    const c=cols.find(x=>x.fid===first.fid&&x.tr===Math.min(first.tr,colCount(first.fid)-1))||cols[0];
+    state.sel=c?{fid:c.fid,tr:c.tr,frame}:null;state.anchor=null;
+  });
+  toast(`列「${label}」を削除しました（Undoで戻せます）`);
+}
+function deleteSelectedColumns(){
+  const r=range();if(!r){toast('削除する列のセルを選んでください');return}
+  deleteColumns(r.cols.slice(r.c0,r.c1+1).map(c=>({fid:c.fid,tr:c.tr})));
+}
+function renameColumn(fid,tr,th){
+  const old=names(fid)[tr]??String(tr+1);
+  const input=document.createElement('input');input.value=old;
+  input.style.cssText='position:absolute;inset:0;width:100%;border:0;outline:2px solid var(--accent);text-align:center;font:inherit;z-index:5';
+  th.appendChild(input);input.focus();input.select();
+  let done=false;
+  const finish=ok=>{if(done)return;done=true;const v=input.value.trim();input.remove();
+    if(ok&&v&&v!==old)commit(()=>{const n=names(fid,true);while(n.length<=tr)n.push(String(n.length+1));n[tr]=v});else render()};
+  input.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false)});
+  input.addEventListener('blur',()=>finish(true));
+}
+function groupLabel(fid){return ({0:'ACTION',3:'CELL(S)',4:'CELL',5:'CAM'})[fid]||'FIELD '+fid}
+
+// ---- rendering ------------------------------------------------------------------
+function frameLabel(f){
+  if(state.frameMode==='page')return (f%PAGE)+1;
+  return f+1;
+}
+function render(){
+  if(state.editing)return;
+  const L=layout(),dur=duration();
+  const disp=L.cols.map(c=>c.fid!==undefined?columnDisplay(c,dur):null);
+  const CW={fno:58,ph:34,slot:20,slot2:26,action:34,cell:34,sound:120,cam:70,other:46};
+  const cw=c=>c.frameCol?'fno':c.ph?'ph':c.slot?(c.slot.text.length>1?'slot2':'slot'):c.kind;
+  const width=(c,ci)=>c.kind==='sound'&&state.soundFull?soundWidth(disp[ci]):CW[cw(c)];
+  const tw=L.cols.reduce((a,c,ci)=>a+width(c,ci),0)+4;
+  const colgroup='<colgroup>'+L.cols.map((c,ci)=>`<col style="width:${width(c,ci)}px">`).join('')+'</colgroup>';
+  const thead=sticky=>{
+    let h=`<thead><tr class="g">`;
+    for(const g of L.heads){
+      if(g.frameCol){h+='<th class="gs" rowspan="2"></th>';continue}
+      h+=`<th class="gs" colspan="${g.span}">${g.label}</th>`;
+    }
+    h+='</tr><tr class="n">';
+    for(const c of L.cols){
+      if(c.frameCol)continue;
+      if(c.ph){h+='<th class="gs"></th>';continue}
+      if(c.slot){const a=c.slot;h+=`<th class="slot"><button class="addbtn" data-add="${a.fid}" data-kind="${a.kind}" title="${a.kind==='sound'?'セリフ(S)列':groupLabel(a.fid)+'列'}を追加">${a.text}</button></th>`;continue}
+      h+=`<th class="col${c.gs?' gs':''}${c.ps?' ps':''}" data-fid="${c.fid}" data-tr="${c.tr}" title="${esc(c.name)}（${state.hdrRc==='fusion'&&fusionFieldFor(c.fid)?'右クリックでFusion設定をコピー／▾でメニュー':'右クリックでメニュー'}／ダブルクリックで名前変更）">${esc(c.name)}<button class="colmenu" title="メニュー">▾</button></th>`;
+    }
+    return h+'</tr></thead>';
+  };
+  const rows=(start,count)=>{
+    let h='<tbody>';
+    for(let i=0;i<count;i++){
+      const f=start+i,valid=f<dur,n=f+1;
+      h+=`<tr class="${n%24===0?'r24':n%6===0?'r6':''}">`;
+      for(let ci=0;ci<L.cols.length;ci++){
+        const c=L.cols[ci],b=(c.gs?' gs':'')+(c.ps?' ps':'');
+        if(c.frameCol){
+          // like the paper sheet: frames after the cut's end stay numbered but are greyed out
+          const lab=n%2===0?frameLabel(f):'',sec=n%24===0?`<span class="sec">${n/24}</span>`:'';
+          h+=`<td class="fno${b}${valid?'':' off'}" title="${valid?'':'尺の外（入力しないエリア）'}">${sec}${lab}</td>`;continue;
+        }
+        if(c.slot){h+=`<td class="slot${valid?'':' off'}" data-add="${c.slot.fid}" data-kind="${c.slot.kind}" title="${c.slot.kind==='sound'?'セリフ(S)列':groupLabel(c.slot.fid)+'列'}を追加"></td>`;continue}
+        if(c.ph||!valid){h+=`<td class="${c.ph?'ph':'off'}${b}${c.kind==='sound'?' sound':''}"${valid?'':' title="尺の外（入力しないエリア）"'}></td>`;continue}
+        const d=disp[ci][f],ro=editable(c.fid)?'':' ro';
+        h+=`<td class="${c.kind}${b}${ro} ${d.cls}" data-fid="${c.fid}" data-tr="${c.tr}" data-f="${f}"${d.title?` title="${esc(d.title)}"`:''}>${esc(d.text)}</td>`;
+      }
+      h+='</tr>';
+    }
+    return h+'</tbody>';
+  };
+  let html=headBlock(dur);
+  if(state.view==='paper'){
+    const pages=Math.ceil(dur/PAGE);
+    for(let p=0;p<pages;p++){
+      html+=`<div class="page" id="page${p}"><div class="page-label">シート ${p+1} / ${pages}（${p*6+1}〜${p*6+6}秒）${hiddenNote()}</div><div class="halves">`;
+      for(const s of [p*PAGE,p*PAGE+HALF])html+=`<table class="ts${state.soundFull?' full-sound':''}" style="width:${tw}px">${colgroup}${thead()}${rows(s,HALF)}</table>`;
+      html+='</div></div>';
+    }
+    html+=sheetOps(dur);
+  }else{
+    html+=`<div class="page-label">${hiddenNote()}</div>`;
+    html+=`<table class="ts sticky${state.soundFull?' full-sound':''}" style="width:${tw}px">${colgroup}${thead()}${rows(0,dur)}</table>`+sheetOps(dur);
+  }
+  const main=$('main'),top=main.scrollTop,left=main.scrollLeft;
+  $('app').innerHTML=html;main.scrollTop=top;main.scrollLeft=left;
+  wireHead();paintSel();renderVisToggles();
+  // sheet pager
+  const pages=Math.ceil(dur/PAGE);
+  $('sheetChips').innerHTML=Array.from({length:pages},(_,i)=>`<button class="chip" data-sheet-go="${i}" title="シート${i+1}（${i*6+1}〜${i*6+6}秒）">${i+1}</button>`).join('');
+  updatePager();scheduleBackup();
+  $('btnUndo').disabled=!state.history.length;$('btnRedo').disabled=!state.future.length;$('sheetDel').disabled=pages<2;
+  $('status').textContent=(state.fileName||'新規シート')+(state.dirty?' *':'');
+  document.title=(state.dirty?'* ':'')+(state.fileName||'新規シート')+' - TDTS / XDTS Editor';
+  updateWhere();
+}
+function sheetOps(dur){
+  const pages=Math.ceil(dur/PAGE);
+  return `<button class="sheet-add" data-sheet="add"><b>＋</b>シート ${pages+1} を追加（${pages*6+1}〜${pages*6+6}秒）</button>
+  <div class="sheet-ops"><button data-sheet="del" ${pages<2?'disabled':''}>− 最後のシートを削除</button><span>現在 ${pages} 枚・${Math.floor(dur/FPS)}秒+${dur%FPS}コマ（秒数欄で1コマ単位の調整もできます）</span></div>`;
+}
+function changeSheets(delta){
+  const d=duration(),nd=d+delta*PAGE;
+  if(nd<1)return;
+  const lost=delta<0&&layout().cols.some(c=>c.fid!==undefined&&sortedFrames(track(c.fid,c.tr)).some(x=>x.frame>=nd&&x.frame<d));
+  commit(()=>{table().duration=nd});
+  toast(delta>0?`シートを追加しました（${Math.ceil(nd/PAGE)}枚）`:`最後のシートを削除しました${lost?'（そのシートの入力は隠れただけで、Undoで戻せます）':''}`);
+  if(delta>0)goSheet(Math.ceil(nd/PAGE)-1);
+}
+// width that fits the longest dialogue line of an S column (full-text mode)
+function soundWidth(disp){
+  const ctx=(soundWidth.c||=document.createElement('canvas').getContext('2d'));
+  ctx.font='11.5px "Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif';
+  let w=0;for(const d of disp||[])if(d&&d.text)w=Math.max(w,ctx.measureText(d.text).width);
+  return Math.max(120,Math.ceil(w)+14);
+}
+function visKinds(){return VIS_KINDS.filter(k=>!k.tdtsOnly||state.format==='tdts')}
+function renderVisToggles(){
+  $('visToggles').innerHTML=visKinds().map(k=>`<button data-vis="${k.kind}" class="${state.hidden.has(k.kind)?'':'on'}" title="${k.label}列を${state.hidden.has(k.kind)?'表示する':'隠す'}（データは消えません）">${k.icon} ${k.label}</button>`).join('');
+}
+function setVisible(kind,show){
+  if(!show){
+    const shown=visKinds().filter(k=>!state.hidden.has(k.kind));
+    if(shown.length<=1&&shown[0]?.kind===kind){toast('すべての列は隠せません');return}
+    state.hidden.add(kind);
+  }else state.hidden.delete(kind);
+  saveHidden();
+  // keep the focus on a visible column
+  const cols=navCols();
+  if(state.sel&&!cols.some(c=>c.fid===state.sel.fid&&c.tr===state.sel.tr)){const c=cols[0];state.sel=c?{fid:c.fid,tr:c.tr,frame:state.sel.frame}:null}
+  state.anchor=null;
+  render();
+  toast(show?`${VIS_KINDS.find(k=>k.kind===kind).label}列を表示しました`:`${VIS_KINDS.find(k=>k.kind===kind).label}列を隠しました（データはそのまま残ります）`);
+}
+function hiddenNote(){
+  const h=visKinds().filter(k=>state.hidden.has(k.kind));
+  return h.length?`<span class="hidden-note" title="クリックですべて表示">非表示中: ${h.map(k=>k.label).join('・')}（クリックで全部表示）</span>`:'';
+}
+function headBlock(dur){
+  const h=docHeader(),t=table(),tdts=state.format==='tdts';
+  const sec=Math.floor(dur/FPS),fr=dur%FPS,pages=Math.ceil(dur/PAGE);
+  const nameLbl=tdts?'話　数 ／ サブタイトル':'名　前';
+  const nameVal=tdts?(h.episode??''):(t.name??'');
+  return `<div class="head">
+    <div><div class="lbl">${nameLbl}</div><div class="val"><input class="w-name" data-h="name" value="${esc(nameVal)}"></div></div>
+    <div><div class="lbl">シ ー ン　　カ ッ ト</div><div class="val"><input class="w-num" data-h="scene" value="${esc(h.scene??'')}"> − <input class="w-num" data-h="cut" value="${esc(h.cut??'')}"></div></div>
+    <div><div class="lbl">秒　数</div><div class="val"><input class="w-num" data-h="sec" value="${sec}" inputmode="numeric"> + <input class="w-num" data-h="fr" value="${fr}" inputmode="numeric"></div></div>
+    <div><div class="lbl">シ ー ト</div><div class="val ro">${pages} 枚</div></div>
+    <div><div class="lbl">形　式</div><div class="val"><span class="fmt">${state.format.toUpperCase()}<br>${dur} コマ</span></div></div>
+  </div>`;
+}
+function wireHead(){
+  document.querySelectorAll('.head input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')inp.blur();if(e.key==='Escape'){render()}});
+    inp.addEventListener('change',()=>{
+      const k=inp.dataset.h,v=inp.value.trim(),h=docHeader();
+      if(k==='sec'||k==='fr'){
+        const s=+document.querySelector('.head input[data-h=sec]').value||0,f=+document.querySelector('.head input[data-h=fr]').value||0;
+        const d=Math.max(1,Math.floor(s)*FPS+Math.floor(f));
+        if(d!==duration())commit(()=>{table().duration=d});else render();
+        return;
+      }
+      commit(()=>{
+        if(k==='name'){if(state.format==='tdts')h.episode=typeof h.episode==='number'&&v!==''&&!isNaN(+v)?+v:v;else table().name=v}
+        else h[k]=typeof h[k]==='number'&&v!==''&&!isNaN(+v)?+v:v;
+      });
+    });
+  });
+}
+
+// ---- selection & editing -----------------------------------------------------------
+function cellEl(s){return s&&document.querySelector(`td[data-fid="${s.fid}"][data-tr="${s.tr}"][data-f="${s.frame}"]`)}
+// ---- sheets (pages of 144 frames) ----------------------------------------------------
+function sheetCount(){return Math.ceil(duration()/PAGE)}
+// the sheet currently on screen (paper view: the page whose top passed the viewport top)
+function currentSheet(){
+  const main=$('main'),top=main.getBoundingClientRect().top+40;
+  if(state.view==='paper'){
+    let cur=0;document.querySelectorAll('.page').forEach((pg,i)=>{if(pg.getBoundingClientRect().top<=top)cur=i});return cur;
+  }
+  const row=[...document.querySelectorAll('td.fno')].find(td=>td.getBoundingClientRect().bottom>top+30);
+  return row?Math.floor(row.parentElement.rowIndex>1?(row.parentElement.rowIndex-2)/PAGE:0):0;
+}
+function updatePager(){
+  const cur=currentSheet(),n=sheetCount();
+  document.querySelectorAll('#sheetChips .chip').forEach((b,i)=>b.classList.toggle('on',i===cur));
+  $('sheetPrev').disabled=cur<=0;$('sheetNext').disabled=cur>=n-1;
+  document.querySelector('#sheetChips .chip.on')?.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+// jump to sheet i, keeping the selected column and the position within the sheet
+function goSheet(i){
+  const n=sheetCount();i=Math.max(0,Math.min(n-1,i));
+  const s=state.sel;
+  if(s){const f=Math.min(duration()-1,i*PAGE+s.frame%PAGE);select(s.fid,s.tr,f,false)}
+  if(state.view==='paper')$('page'+i)?.scrollIntoView({block:'start'});
+  else{const td=document.querySelectorAll('td.fno')[i*PAGE];if(td){const m=$('main');m.scrollTop+=td.getBoundingClientRect().top-m.getBoundingClientRect().top-60}}
+  updatePager();
+}
+// state.sel is the focused cell; state.anchor the other corner of a rectangular range
+function select(fid,tr,frame,scroll=true,extend=false){
+  state.sel={fid,tr,frame};
+  if(!extend||!state.anchor)state.anchor={fid,tr,frame};
+  paintSel();
+  const el=cellEl(state.sel);
+  if(el&&scroll)el.scrollIntoView({block:'nearest',inline:'nearest'});
+  updateWhere();
+}
+// {c0,c1,f0,f1,cols} in navCols() order, or null
+function range(){
+  const s=state.sel,a=state.anchor||s;if(!s)return null;
+  const cols=navCols(),i=c=>cols.findIndex(x=>x.fid===c.fid&&x.tr===c.tr);
+  let ci=i(s),ai=i(a);if(ci<0)return null;if(ai<0)ai=ci;
+  return {c0:Math.min(ci,ai),c1:Math.max(ci,ai),f0:Math.min(s.frame,a.frame),f1:Math.max(s.frame,a.frame),cols};
+}
+function isMulti(){const r=range();return !!r&&(r.c0!==r.c1||r.f0!==r.f1)}
+function paintSel(){
+  document.querySelectorAll('td.sel,td.rng').forEach(x=>x.classList.remove('sel','rng'));
+  const r=range();if(!r)return;
+  if(r.c0!==r.c1||r.f0!==r.f1){
+    const keys=new Set();for(let c=r.c0;c<=r.c1;c++)keys.add(r.cols[c].fid+':'+r.cols[c].tr);
+    document.querySelectorAll('td[data-fid]').forEach(td=>{const f=+td.dataset.f;if(f>=r.f0&&f<=r.f1&&keys.has(td.dataset.fid+':'+td.dataset.tr))td.classList.add('rng')});
+  }
+  cellEl(state.sel)?.classList.add('sel');
+}
+function updateWhere(){
+  const s=state.sel;
+  if(!s){$('where').textContent='セルを選択してください';return}
+  const r=range();
+  if(r&&(r.c0!==r.c1||r.f0!==r.f1)){$('where').textContent=`${r.c1-r.c0+1}列 × ${r.f1-r.f0+1}コマを選択中（${r.f0+1}〜${r.f1+1}コマ目）　Ctrl+C: コピー　Ctrl+X: 切り取り　Ctrl+V: 貼り付け　Delete: 削除`;return}
+  const nm=names(s.fid)[s.tr]??s.tr+1,f=s.frame,sec=Math.floor(f/FPS),fr=f%FPS+1;
+  const p=pointAt(track(s.fid,s.tr),f),raw=p?values(p).join(' / '):'（変更点なし）';
+  $('where').textContent=`${groupLabel(s.fid)} ${nm}　${f+1}コマ目（${sec}秒 ${fr}コマ）　値: ${raw}　｜ ${stepLabel()}`;
+}
+function navCols(){return layout().cols.filter(c=>c.fid!==undefined)}
+// ---- 打ち数 (how far Enter moves after an input) ----------------------------------------
+function setStep(v){
+  state.step=String(v);savePref('step',state.step);
+  document.querySelectorAll('#stepSeg button').forEach(b=>b.classList.toggle('on',b.dataset.step===state.step));
+  updateWhere();toast(state.step==='auto'?'打ち：自動（直前の間隔で進む）':`${state.step}コマ打ち（Enterで${state.step}コマ進む）`);
+}
+// gap between the change point at `frame` and the previous one in the same column (auto mode)
+function autoGap(fid,tr,frame){
+  const prev=sortedFrames(track(fid,tr)).filter(x=>x.frame<frame&&values(x)[0]!==SYM.HYPHEN).pop();
+  return prev?Math.max(1,frame-prev.frame):1;
+}
+function stepAt(fid,tr,frame){return state.step==='auto'?autoGap(fid,tr,frame):Math.max(1,+state.step||1)}
+function stepLabel(){return state.step==='auto'?'打ち: 自動':`打ち: ${state.step}コマ`}
+// sequential numbers every `step` frames over the selected range (each selected column)
+function fillSequence(){
+  const r=range();if(!r||r.f0===r.f1){toast('連番を入れる範囲（縦に複数コマ）を選んでください');return}
+  const cols=r.cols.slice(r.c0,r.c1+1).filter(c=>editable(c.fid)&&c.kind!=='sound');
+  if(!cols.length){toast('連番はACTION／CELL／CAM列に入れられます');return}
+  let total=0;
+  commit(()=>{
+    for(const c of cols){
+      const t=track(c.fid,c.tr,true);names(c.fid,true);
+      const first=pointAt(t,r.f0),n0=first&&/^\d+$/.test(values(first)[0]??'')?+values(first)[0]:1;
+      const st=state.step==='auto'?autoGap(c.fid,c.tr,r.f0)||1:Math.max(1,+state.step||1);
+      t.frames=sortedFrames(t).filter(x=>x.frame<r.f0||x.frame>r.f1);
+      for(let f=r.f0,n=n0;f<=r.f1;f+=st,n++){setValue(c.fid,c.tr,f,[String(n)]);total++}
+    }
+  });
+  toast(`連番を${total}個入れました（${stepLabel()}）`);
+}
+// insert / delete frames: shift later change points of the selected (or all) columns
+function shiftFrames(insert,allCols){
+  const r=range();if(!r)return;
+  const h=r.f1-r.f0+1,dur=duration();
+  const cols=(allCols?layout().cols.filter(c=>c.fid!==undefined):r.cols.slice(r.c0,r.c1+1)).filter(c=>editable(c.fid));
+  let pushedOut=0;
+  commit(()=>{
+    for(const c of cols){
+      const t=track(c.fid,c.tr);if(!t)continue;
+      let fr=sortedFrames(t);
+      if(insert){fr.forEach(x=>{if(x.frame>=r.f0){if(x.frame<dur&&x.frame+h>=dur)pushedOut++;x.frame+=h}})}
+      else{fr=fr.filter(x=>x.frame<r.f0||x.frame>r.f1);fr.forEach(x=>{if(x.frame>r.f1)x.frame-=h})}
+      t.frames=fr;
+    }
+  });
+  const where=allCols?'全列':`${cols.length}列`;
+  toast(insert?`${where}に${h}コマ挿入しました${pushedOut?`（${pushedOut}個の入力が尺の外に出ました。Undoで戻せます）`:''}`:`${where}から${h}コマ削除して詰めました`);
+}
+// ---- dialogue length: [speaker, text] at the start frame, SYMBOL_HYPHEN down to the end ----
+// the selection as {fid,tr,f0,f1} when it is a vertical range in one dialogue column
+function soundSpanSel(){
+  const r=range();if(!r||r.c0!==r.c1||r.f0===r.f1)return null;
+  const c=r.cols[r.c0];return c.kind==='sound'&&editable(c.fid)?{fid:c.fid,tr:c.tr,f0:r.f0,f1:r.f1}:null;
+}
+// put a dialogue at f0 lasting to f1, replacing whatever was in that span and the old tail
+function setSoundSpan(fid,tr,f0,f1,vals){
+  const t=track(fid,tr,true);
+  const isH=f=>values(pointAt(t,f))[0]===SYM.HYPHEN;
+  let tail=f1;while(isH(tail+1))tail++;
+  t.frames=sortedFrames(t).filter(x=>x.frame<f0||x.frame>tail);
+  setValue(fid,tr,f0,vals);
+  for(let f=f0+1;f<=f1;f++)setValue(fid,tr,f,[SYM.HYPHEN]);
+}
+// 「セリフの長さを合わせる」: the dialogue at (or running through) the top of the range now ends at its bottom
+function fitSoundLength(){
+  const sp=soundSpanSel();
+  if(!sp){toast('セリフ列で、セリフの始まりから新しい終わりまで縦に範囲を選んでください');return}
+  const t=track(sp.fid,sp.tr),pts=sortedFrames(t);
+  const start=pts.filter(x=>x.frame<=sp.f0&&values(x)[0]!==SYM.HYPHEN).pop();
+  const sv=start&&values(start);
+  if(!sv||sv[0]===SYM.NULL||sv[0]===''){toast('範囲の一番上にセリフがありません');return}
+  let end=start.frame;while(values(pointAt(t,end+1))[0]===SYM.HYPHEN)end++;
+  if(end<sp.f0){toast('範囲の一番上にセリフがありません');return}
+  const next=pts.find(x=>x.frame>start.frame&&x.frame<=sp.f1&&values(x)[0]!==SYM.HYPHEN);
+  if(next){toast(`${next.frame+1}コマ目に次のセリフがあるので、そこまでしか伸ばせません`);return}
+  commit(()=>setSoundSpan(sp.fid,sp.tr,start.frame,sp.f1,sv));
+  select(sp.fid,sp.tr,start.frame,false);state.anchor={fid:sp.fid,tr:sp.tr,frame:sp.f1};paintSel();updateWhere();
+  toast(`セリフを${start.frame+1}〜${sp.f1+1}コマ目（${sp.f1-start.frame+1}コマ）にしました`);
+}
+function beginEdit(initial=null,span=null){
+  const s=state.sel;if(!s||state.editing||!editable(s.fid))return;
+  const td=cellEl(s);if(!td)return;
+  const kind=navCols().find(c=>c.fid===s.fid&&c.tr===s.tr)?.kind;
+  state.editing=true;
+  const input=document.createElement('input');
+  input.value=initial!==null?initial:editText(pointAt(track(s.fid,s.tr),s.frame),kind);
+  td.appendChild(input);input.focus();
+  if(initial!==null)input.setSelectionRange(input.value.length,input.value.length);else input.select();
+  let done=false;
+  const finish=(ok,move=1)=>{
+    if(done)return;done=true;state.editing=false;
+    const v=input.value;input.remove();
+    if(ok){
+      const vals=normalizeInput(v,kind),cur=pointAt(track(s.fid,s.tr),s.frame);
+      // typed with a vertical range selected in a dialogue column: the range becomes its length
+      if(span&&vals&&vals[0]!==SYM.HYPHEN&&vals[0]!==SYM.NULL){
+        commit(()=>setSoundSpan(s.fid,s.tr,span.f0,span.f1,vals));
+        select(s.fid,s.tr,Math.min(duration()-1,span.f1+1));return;
+      }
+      const same=JSON.stringify(vals)===JSON.stringify(cur?values(cur):null);
+      if(!same)commit(()=>setValue(s.fid,s.tr,s.frame,vals));
+      const adv=move===1&&finish.byEnter?stepAt(s.fid,s.tr,s.frame):move;
+      select(s.fid,s.tr,Math.min(duration()-1,Math.max(0,s.frame+adv)));
+    }else{render();select(s.fid,s.tr,s.frame)}
+  };
+  input.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.isComposing)return;
+    if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();finish.byEnter=e.key==='Enter'&&!e.shiftKey;finish(true,e.shiftKey?-1:1)}
+    else if(e.key==='Escape'){e.preventDefault();finish(false)}
+    else if(e.key==='ArrowDown'){e.preventDefault();finish(true,1)}
+    else if(e.key==='ArrowUp'){e.preventDefault();finish(true,-1)}
+  });
+  input.addEventListener('blur',()=>finish(true,0));
+}
+function moveSel(dx,dy,extend=false){
+  const s=state.sel,cols=navCols();if(!s||!cols.length)return;
+  let ci=cols.findIndex(c=>c.fid===s.fid&&c.tr===s.tr);if(ci<0)ci=0;
+  let frame=s.frame;
+  if(state.view==='paper'&&dx){
+    // left/right edge of a half jumps to the neighbouring half
+    const n=cols.length;ci+=dx;
+    if(ci<0){if(frame%PAGE>=HALF){frame-=HALF;ci=n-1}else ci=0}
+    else if(ci>=n){if(frame%PAGE<HALF&&frame+HALF<duration()){frame+=HALF;ci=0}else ci=n-1}
+  }else ci=Math.max(0,Math.min(cols.length-1,ci+dx));
+  frame=Math.max(0,Math.min(duration()-1,frame+dy));
+  select(cols[ci].fid,cols[ci].tr,frame,true,extend);
+}
+function keydown(e){
+  if(state.editing||!$('tlPicker').classList.contains('hidden')||!$('restore').classList.contains('hidden')||(!$('keysDlg').classList.contains('hidden')&&(e.key!=='Escape'||($('keysDlg').classList.add('hidden'),true)))||e.target.closest?.('.head'))return;
+  if((e.ctrlKey||e.metaKey)&&!e.altKey){
+    const k=e.key.toLowerCase();
+    if(k==='z'&&!e.shiftKey){e.preventDefault();undo();return}
+    if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();redo();return}
+    if(k==='s'){e.preventDefault();save();return}
+    if(k==='o'){e.preventDefault();$('file').click();return}
+    if(e.key==='ArrowDown'){e.preventDefault();goSheet(currentSheet()+1);return}
+    if(e.key==='ArrowUp'){e.preventDefault();goSheet(currentSheet()-1);return}
+    if(e.key==='Home'){e.preventDefault();goSheet(0);return}
+    if(e.key==='End'){e.preventDefault();goSheet(sheetCount()-1);return}
+    if(k==='a'&&state.sel){e.preventDefault();selectAll();return}
+    if(e.key==='Delete'&&state.sel){e.preventDefault();shiftFrames(false,e.shiftKey);return}
+    return;
+  }
+  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&e.code==='KeyL'){e.preventDefault();fitSoundLength();return}
+  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&/^Digit[0-4]$/.test(e.code)){e.preventDefault();setStep(e.code==='Digit0'?'auto':e.code.slice(5));return}
+  if(e.key==='Insert'&&state.sel){e.preventDefault();shiftFrames(true,e.shiftKey);return}
+  if(e.key==='Escape'){hideMenu();if(isMulti())select(state.sel.fid,state.sel.tr,state.sel.frame,false);return}
+  if(e.key==='PageDown'){e.preventDefault();goSheet(currentSheet()+1);return}
+  if(e.key==='PageUp'){e.preventDefault();goSheet(currentSheet()-1);return}
+  const s=state.sel;if(!s)return;
+  const step=e.altKey?6:1,ext=e.shiftKey;
+  switch(e.key){
+    case 'ArrowDown':e.preventDefault();moveSel(0,step,ext);return;
+    case 'ArrowUp':e.preventDefault();moveSel(0,-step,ext);return;
+    case 'ArrowRight':e.preventDefault();moveSel(1,0,ext);return;
+    case 'ArrowLeft':e.preventDefault();moveSel(-1,0,ext);return;
+    case 'Enter':case 'F2':e.preventDefault();editWithSpan(null);return;
+    case 'Delete':case 'Backspace':
+      e.preventDefault();
+      if(isMulti()){deleteRange();return}
+      if(editable(s.fid)&&pointAt(track(s.fid,s.tr),s.frame))commit(()=>setValue(s.fid,s.tr,s.frame,null));
+      select(s.fid,s.tr,Math.min(duration()-1,s.frame+1));return;
+  }
+  if(e.key.length===1&&!e.altKey&&editable(s.fid)){e.preventDefault();editWithSpan(e.key)}
+}
+// start editing; with a vertical range in a dialogue column, edit its top cell and keep the range as the length
+function editWithSpan(initial){
+  const s=state.sel,sp=soundSpanSel();
+  if(!sp){select(s.fid,s.tr,s.frame,false);beginEdit(initial);return}
+  select(sp.fid,sp.tr,sp.f0,false);state.anchor={fid:sp.fid,tr:sp.tr,frame:sp.f1};paintSel();
+  beginEdit(initial,sp);
+}
+
+// ---- range operations: copy / cut / paste / delete ----------------------------------
+let clip=null; // last copy: {tsv, grid:[row][col] -> values[] | null}
+function rangeGrid(){
+  const r=range();if(!r)return null;
+  const grid=[];
+  for(let f=r.f0;f<=r.f1;f++){const row=[];for(let c=r.c0;c<=r.c1;c++){const p=pointAt(track(r.cols[c].fid,r.cols[c].tr),f);row.push(p?clone(values(p)):null)}grid.push(row)}
+  const tsv=grid.map(row=>row.map((v,ci)=>v?editText({data:[{values:v}]},r.cols[r.c0+ci].kind).replace(/[\t\n]/g,' '):'').join('\t')).join('\n');
+  return {grid,tsv};
+}
+function copyRange(){const g=rangeGrid();if(!g)return null;clip=g;const r=range();toast(`${r.c1-r.c0+1}列 × ${r.f1-r.f0+1}コマをコピーしました`);return g}
+function deleteRange(msg=true){
+  const r=range();if(!r)return;
+  let n=0;for(let c=r.c0;c<=r.c1;c++){const col=r.cols[c];if(!editable(col.fid))continue;n+=sortedFrames(track(col.fid,col.tr)).filter(x=>x.frame>=r.f0&&x.frame<=r.f1).length}
+  if(!n){if(msg)toast('選択範囲に入力はありません');return}
+  commit(()=>{for(let c=r.c0;c<=r.c1;c++){const col=r.cols[c];if(!editable(col.fid))continue;const t=track(col.fid,col.tr);if(t)t.frames=sortedFrames(t).filter(x=>x.frame<r.f0||x.frame>r.f1)}});
+  if(msg)toast(`${n}個の入力を削除しました（Undoで戻せます）`);
+}
+function parseTsv(text){
+  const lines=text.replace(/\r/g,'').split('\n');if(lines.length>1&&lines[lines.length-1]==='')lines.pop();
+  return lines.map(l=>l.split('\t'));
+}
+// pastes at the top-left of the selection; a single copied cell fills the whole selection
+function pasteGrid(grid,isText){
+  const r=range();if(!r||!grid.length)return;
+  const h=grid.length,w=Math.max(...grid.map(x=>x.length));
+  const fill=h===1&&w===1&&(r.c0!==r.c1||r.f0!==r.f1);
+  const H=fill?r.f1-r.f0+1:h,W=Math.min(fill?r.c1-r.c0+1:w,r.cols.length-r.c0),dur=duration();
+  commit(()=>{
+    for(let ci=0;ci<W;ci++){
+      const col=r.cols[r.c0+ci];if(!editable(col.fid))continue;
+      for(let ri=0;ri<H;ri++){
+        const f=r.f0+ri;if(f>=dur)break;
+        let v=fill?grid[0][0]:(grid[ri][ci]??null);
+        if(isText)v=v==null?null:normalizeInput(v,col.kind);
+        setValue(col.fid,col.tr,f,v?clone(v):null);
+      }
+    }
+  });
+  const first=r.cols[r.c0],last=r.cols[r.c0+W-1];
+  state.anchor={fid:first.fid,tr:first.tr,frame:r.f0};
+  select(last.fid,last.tr,Math.min(dur-1,r.f0+H-1),false,true);
+  toast(`${W}列 × ${H}コマを貼り付けました`);
+}
+function pasteText(text){
+  if(clip&&text===clip.tsv)return pasteGrid(clip.grid,false);
+  pasteGrid(parseTsv(text).map(row=>row.map(x=>x.trim()===''?null:x)),true);
+}
+function gridActive(e){return !state.editing&&!e.target.closest?.('input,textarea')&&state.sel&&$('tlPicker').classList.contains('hidden')}
+document.addEventListener('copy',e=>{if(!gridActive(e))return;const g=copyRange();if(g){e.clipboardData.setData('text/plain',g.tsv);e.preventDefault()}});
+document.addEventListener('cut',e=>{if(!gridActive(e))return;const g=copyRange();if(g){e.clipboardData.setData('text/plain',g.tsv);e.preventDefault();deleteRange(false);toast('切り取りました')}});
+document.addEventListener('paste',e=>{if(!gridActive(e))return;const t=e.clipboardData.getData('text/plain');e.preventDefault();if(t)pasteText(t);else if(clip)pasteGrid(clip.grid,false)});
+async function cmdCopy(cut){
+  const g=copyRange();if(!g)return;
+  try{await navigator.clipboard.writeText(g.tsv)}catch{}
+  if(cut){deleteRange(false);toast('切り取りました')}
+}
+async function cmdPaste(){
+  try{const t=await navigator.clipboard.readText();if(t){pasteText(t);return}}catch{}
+  if(clip)pasteGrid(clip.grid,false);else toast('コピーしたものがありません');
+}
+function selectAll(){const c=navCols();if(!c.length)return;state.anchor={fid:c[0].fid,tr:c[0].tr,frame:0};select(c[c.length-1].fid,c[c.length-1].tr,duration()-1,false,true)}
+const MOD=/Mac/.test(navigator.platform)?'⌘':'Ctrl+';
+function cellMenu(e,td){
+  e.preventDefault();
+  const fid=+td.dataset.fid,tr=+td.dataset.tr,f=+td.dataset.f,r=range();
+  const inside=r&&f>=r.f0&&f<=r.f1&&r.cols.slice(r.c0,r.c1+1).some(c=>c.fid===fid&&c.tr===tr);
+  if(!inside)select(fid,tr,f,false);
+  showMenu(e.clientX,e.clientY,[
+    {label:`📋 コピー（${MOD}C）`,run:()=>cmdCopy(false)},
+    {label:`✂️ 切り取り（${MOD}X）`,run:()=>cmdCopy(true)},
+    {label:`📌 貼り付け（${MOD}V）`,run:cmdPaste},
+    '-',
+    {label:isMulti()?'🗑️ 選択範囲を削除（Delete）':'🗑️ 削除（Delete）',run:()=>deleteRange()},
+    '-',
+    {label:'⤵️ 選択列にコマ挿入（Insert）',run:()=>shiftFrames(true,false)},
+    {label:'⤴️ 選択列のコマを削除して詰める（Ctrl+Delete）',run:()=>shiftFrames(false,false)},
+    {label:'⤵️ 全列にコマ挿入（Shift+Insert）',run:()=>shiftFrames(true,true)},
+    {label:'⤴️ 全列のコマを削除して詰める（Ctrl+Shift+Delete）',run:()=>shiftFrames(false,true)},
+    {label:'🔢 連番を入れる',run:fillSequence},
+    {label:'↕️ セリフの長さを選択範囲に合わせる（Alt+L）',run:fitSoundLength},
+    '-',
+    {label:(()=>{const r=range();const n=r?r.c1-r.c0+1:1;return n>1?`❌ 選択中の ${n} 列を削除`:'❌ この列を削除'})(),run:deleteSelectedColumns},
+  ]);
+}
+function addColumnMenu(x,y){
+  const tdts=state.format==='tdts';
+  showMenu(x,y,[
+    {label:'🅰️ ACTION 列を追加',run:()=>addColumn(0,'action')},
+    ...(tdts?[{label:'🔤 CELL 列を追加',run:()=>addColumn(4,'cell')}]:[]),
+    {label:'💬 セリフ（S）列を追加',run:()=>addColumn(3,'sound')},
+    {label:'🎥 CAM 列を追加',run:()=>addColumn(5,'cam')},
+  ]);
+}
+
+// ---- context menu -------------------------------------------------------------------
+function showMenu(x,y,items){
+  const m=$('menu');
+  m.innerHTML=items.map((it,i)=>it==='-'?'<hr>':`<button data-i="${i}" ${it.disabled?'disabled':''}>${esc(it.label)}</button>`).join('');
+  m.querySelectorAll('button').forEach(b=>b.onclick=()=>{hideMenu();items[+b.dataset.i].run()});
+  m.classList.remove('hidden');
+  const r=m.getBoundingClientRect();
+  m.style.left=Math.min(x,innerWidth-r.width-6)+'px';m.style.top=Math.min(y,innerHeight-r.height-6)+'px';
+}
+function hideMenu(){$('menu').classList.add('hidden')}
+function columnMenu(e,th){
+  e.preventDefault();
+  const fid=+th.dataset.fid,tr=+th.dataset.tr,fus=fusionFieldFor(fid);
+  showMenu(e.clientX,e.clientY,[
+    {label:'名前を変更',run:()=>renameColumn(fid,tr,th),disabled:!editable(fid)},
+    {label:'この列を削除',run:()=>deleteColumn(fid,tr),disabled:!editable(fid)},
+    '-',
+    {label:fus?`Fusion設定をコピー（${fus}）`:'Fusion設定をコピー（ACTION/CELLのみ）',run:()=>copyFusionTrack(fid,tr),disabled:!fus},
+  ]);
+}
+
+// ---- Fusion export (kept from v1.6.4) --------------------------------------------------
+// adapters for the v1.6.4 Fusion code
+const fields=()=>fieldsArr(),activeTable=()=>table(),getHeader=id=>({fieldId:id,names:names(id)}),showToast=m=>toast(m);
+function frameData(track,frame){if(!track)return null;let last=null;for(const x of sortedFrames(track)){if(x.frame>frame)break;last=x}return last?last.data:null}
+function valueAt(track,frame){let d=frameData(track,frame);if(!d||!d.length)return '';let v=(d[0].values||[''])[0]??'';if(v==='SYMBOL_HYPHEN')return valueAtBefore(track,frame);return v}
+function valueAtBefore(track,frame){let last='';for(const x of sortedFrames(track)){if(x.frame>=frame)break;let v=x.data?.[0]?.values?.[0]??'';if(v==='SYMBOL_HYPHEN')continue;last=v}return last}
+const fusionSettingTemplate=`{
+	Tools = ordered() {
+		TimeStretcher1 = TimeStretcher {
+			CtrlWZoom = false,
+			Inputs = {
+				SourceTime = Input {
+					SourceOp = "TimeStretcher1ソースタイム",
+					Source = "Value",
+				}
+			},
+			ViewInfo = OperatorInfo { Pos = { 165, -148.5 } },
+		},
+		["TimeStretcher1ソースタイム"] = BezierSpline {
+			SplineColor = { Red = 113, Green = 235, Blue = 254 },
+			CtrlWZoom = false,
+			NameSet = true,
+			KeyFrames = {
+				[1] = { 1, Flags = { StepIn = true } }
+			}
+		},
+		MatteControl1 = MatteControl {
+			Inputs = {
+				Filter = Input { Value = FuID { "Fast Gaussian" }, },
+				["Garbage.Matte"] = Input {
+					SourceOp = "Rectangle1",
+					Source = "Mask",
+				},
+				["Garbage.MaskNest"] = Input { Value = 1, },
+				["Garbage.MaskInverted"] = Input { Value = 1, },
+				Background = Input {
+					SourceOp = "TimeStretcher1",
+					Source = "Output",
+				}
+			},
+			ViewInfo = OperatorInfo { Pos = { 275, -148.5 } },
+		},
+		Rectangle1 = RectangleMask {
+			Inputs = {
+				Level = Input {
+					SourceOp = "Rectangle1レベル",
+					Source = "Value",
+				},
+				Filter = Input { Value = FuID { "Fast Gaussian" }, },
+				MaskWidth = Input { Value = 1920, },
+				MaskHeight = Input { Value = 1080, },
+				PixelAspect = Input { Value = { 1, 1 }, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				ClippingMode = Input { Value = FuID { "None" }, },
+				Width = Input { Value = 1, },
+				Height = Input { Value = 1, }
+			},
+			ViewInfo = OperatorInfo { Pos = { 275, -214.5 } },
+		},
+		["Rectangle1レベル"] = BezierSpline {
+			SplineColor = { Red = 222, Green = 235, Blue = 230 },
+			CtrlWZoom = false,
+			NameSet = true,
+			KeyFrames = {
+				[1] = { 1, Flags = { StepIn = true } }
+			}
+		}
+	}
+}`;
+
+function fusionFieldFor(fieldId){
+  return fieldId===0?'ACTION':fieldId===4?'CELL':null;
+}
+function resolvedTrackStates(track,duration){
+  // Produce the state visible on each timesheet frame without expanding the
+  // saved TDTS/XDTS structure. '-' continues the previous state; an explicit
+  // × makes the cell empty; numbers/ticks are treated as occupied cells.
+  const states=[]; let lastNumber=null; let occupied=false;
+  const frames=(track?.frames||[]).slice().sort((a,b)=>a.frame-b.frame);
+  let fi=0;
+  for(let frame=0;frame<duration;frame++){
+    while(fi<frames.length && frames[fi].frame===frame){
+      const v=frames[fi]?.data?.[0]?.values?.[0]??'';
+      if(v==='SYMBOL_HYPHEN'){
+        // Continue exactly what was in force before this change point.
+      }else if(v==='SYMBOL_NULL_CELL'){
+        occupied=false;
+      }else if(v==='SYMBOL_TICK_1'||v==='SYMBOL_TICK_2'){
+        occupied=true;
+      }else if(v!==''){
+        occupied=true;
+        const n=Number(v);
+        if(Number.isFinite(n))lastNumber=n;
+      }
+      fi++;
+    }
+    states.push({occupied,number:lastNumber});
+  }
+  return states;
+}
+function fusionKeyLine(frame,value,indent='\t\t\t\t'){
+  return `${indent}[${frame}] = { ${value}, Flags = { StepIn = true } }`;
+}
+function buildFusionSetting(fieldId,trackNo){
+  const kind=fusionFieldFor(fieldId);
+  if(!kind)throw new Error('Fusionコピーに対応しているのはACTION/CELLのみです。');
+  const t=fields().find(f=>f.fieldId===fieldId)?.tracks?.find(x=>x.trackNo===trackNo);
+  if(!t)throw new Error(`${kind}の対象トラックが見つかりません。`);
+  const duration=Number(activeTable().duration||0);
+  const states=resolvedTrackStates(t,duration);
+
+  // TDTS/XDTS are internally 0-based, while the visible timesheet and Fusion
+  // timeline are both treated as 1-based here.
+  const source=[];
+  let previousSource=1;
+  source.push(fusionKeyLine(1,previousSource));
+  for(let i=0;i<states.length;i++){
+    const n=states[i].number;
+    if(Number.isFinite(n) && n!==previousSource){
+      source.push(fusionKeyLine(i+1,n));
+      previousSource=n;
+    }
+  }
+
+  // Rectangle Level is based strictly on the resolved timesheet value:
+  // explicit empty-cell (×) / no value => 0, everything else => 1.
+  // '-' is already resolved by valueAt() to the previous value, so it stays 1.
+  // Only transitions create keys; StepIn holds the value between keys.
+  const rect=[];
+  let previousLevel=null;
+  for(let i=0;i<duration;i++){
+    const v=valueAt(t,i);
+    const level=(v==='SYMBOL_NULL_CELL'||v==='')?0:1;
+    if(i===0 || level!==previousLevel){
+      rect.push(fusionKeyLine(i+1,level));
+      previousLevel=level;
+    }
+  }
+  if(!rect.length)rect.push(fusionKeyLine(1,0));
+
+  // Fusion's setting syntax requires commas between KeyFrames entries.
+  // The final entry has no comma, matching Fusion's own exported settings.
+  const sourceBlock=source.map((line,i)=>line+(i<source.length-1?',':'')).join('\n');
+  const rectBlock=rect.map((line,i)=>line+(i<rect.length-1?',':'')).join('\n');
+
+  // Use the supplied setting as the immutable node/connection template.
+  // Only the two KeyFrames blocks are replaced.
+  const rectRe=/((?:\["Rectangle1レベル"\]\s*=\s*BezierSpline\s*\{[\s\S]*?KeyFrames\s*=\s*\{)\n)[\s\S]*?(\n\s*\}\n\s*\})/;
+  const sourceRe=/((?:\["TimeStretcher1ソースタイム"\]\s*=\s*BezierSpline\s*\{[\s\S]*?KeyFrames\s*=\s*\{)\n)[\s\S]*?(\n\s*\}\n\s*\})/;
+  // Check that both blocks exist rather than comparing output with the template:
+  // a track that holds cell 1 for the whole cut legitimately yields the template text.
+  if(!rectRe.test(fusionSettingTemplate)||!sourceRe.test(fusionSettingTemplate))throw new Error('Fusion設定のKeyFramesブロックを特定できませんでした。');
+  return fusionSettingTemplate
+    .replace(rectRe,(_,open,close)=>open+rectBlock+close)
+    .replace(sourceRe,(_,open,close)=>open+sourceBlock+close);
+}
+async function copyFusionTrack(fieldId,trackNo){
+  try{
+    const text=buildFusionSetting(fieldId,trackNo);
+    await navigator.clipboard.writeText(text);
+    const h=getHeader(fieldId), name=h.names?.[trackNo]??String(trackNo+1);
+    showToast(`${fusionFieldFor(fieldId)} ${name} のFusion設定をコピーしました`);
+  }catch(e){
+    // Clipboard API may be unavailable in file:// contexts. Fall back to the
+    // browser's selection-based copy path.
+    try{
+      const text=buildFusionSetting(fieldId,trackNo);
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.focus();ta.select();
+      const ok=document.execCommand('copy');ta.remove();
+      if(!ok)throw e;
+      const h=getHeader(fieldId), name=h.names?.[trackNo]??String(trackNo+1);
+      showToast(`${fusionFieldFor(fieldId)} ${name} のFusion設定をコピーしました`);
+    }catch(err){alert('Fusion設定のコピーに失敗しました。\n'+err.message)}
+  }
+}
+
+
+// ---- files ---------------------------------------------------------------------------
+function detect(text){const lines=text.replace(/^﻿/,'').split(/\r?\n/);const json=JSON.parse(lines.slice(1).join('\n'));return {fmt:isTdts(json)?'tdts':'xdts',json}}
+function load(root,fmt,fileName){
+  state.root=root;state.format=fmt;state.fileName=fileName;state.dirty=false;state.history=[];state.future=[];
+  state.sel=null;
+  const c=navCols()[0];if(c)state.sel={fid:c.fid,tr:c.tr,frame:0};
+  $('main').scrollTop=0;render();
+}
+function newDoc(){if(!confirmDiscard())return;load(blankDoc(),'xdts','');toast('空のシートを作りました')}
+function confirmDiscard(){return !state.dirty||confirm('保存していない変更があります。破棄してよろしいですか？')}
+function pickTimeline(timelines,fileName){
+  return new Promise(resolve=>{
+    const box=$('tlPicker'),list=$('tlList');
+    $('tlPickerNote').textContent=`${fileName} には ${timelines.length} 本のタイムラインがあります。編集するものを選んでください。`;
+    list.innerHTML=timelines.map((t,i)=>{const fps=Math.round(t.fps)||FPS;return `<button data-i="${i}"><span>${esc(t.name)}</span><small>${t.duration}コマ（${Math.floor(t.duration/fps)}+${t.duration%fps}）/ ${fps}fps</small></button>`}).join('');
+    const done=v=>{box.classList.add('hidden');document.removeEventListener('keydown',onKey,true);resolve(v)};
+    const onKey=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();done(null)}};
+    list.querySelectorAll('button').forEach(b=>b.onclick=()=>done(+b.dataset.i));
+    $('tlCancel').onclick=()=>done(null);
+    document.addEventListener('keydown',onKey,true);
+    box.classList.remove('hidden');list.querySelector('button')?.focus();
+  });
+}
+async function openFile(file){
+  if(!confirmDiscard())return;
+  try{
+    if(/\.clip$/i.test(file.name)){
+      $('status').textContent=`${file.name} を解析中…`;
+      const clip=ClipReader.open(await file.arrayBuffer());
+      if(!clip.timelines.length)throw new Error('タイムラインがありません');
+      const i=clip.timelines.length>1?await pickTimeline(clip.timelines,file.name):0;
+      if(i===null){render();return}
+      load(await clip.build(i),'xdts',`${file.name.replace(/\.clip$/i,'')}_${clip.timelines[i].name}.xdts`);
+    }else{
+      const x=detect(await file.text());
+      load(x.json,x.fmt,file.name);
+    }
+    toast(`${state.fileName} を読み込みました`);
+  }catch(e){render();alert('読み込みに失敗しました。\n'+e.message)}
+}
+function serialize(){return (state.format==='tdts'?prefix.tdts:prefix.xdts)+'\n'+JSON.stringify(state.root,null,2)+'\n'}
+function save(){
+  let name=state.fileName;
+  if(!name){name=prompt('保存するファイル名','timesheet.xdts');if(!name)return;if(!/\.(x|t)dts$/i.test(name))name+='.'+state.format;state.fileName=name}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([serialize()],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  state.dirty=false;render();toast(`${name} を保存しました`);
+}
+// ---- auto backup ---------------------------------------------------------------------
+const BACKUP_KEY='tsEditor.backup';
+function scheduleBackup(){clearTimeout(scheduleBackup.t);scheduleBackup.t=setTimeout(writeBackup,600)}
+function writeBackup(){
+  if(!state.root)return;
+  try{localStorage.setItem(BACKUP_KEY,JSON.stringify({root:state.root,format:state.format,fileName:state.fileName,dirty:state.dirty,at:Date.now()}))}
+  catch(e){if(!writeBackup.warned){writeBackup.warned=true;toast('自動バックアップに失敗しました（ブラウザの保存容量）')}}
+}
+function readBackup(){try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||'null')}catch{return null}}
+function offerRestore(){
+  const b=readBackup();
+  if(!b||!b.dirty||!b.root){load(blankDoc(),'xdts','');return}
+  const d=new Date(b.at),when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  $('restoreNote').textContent=`「${b.fileName||'新規シート'}」を ${when} まで編集した内容が残っています。復元しますか？`;
+  $('restore').classList.remove('hidden');$('restoreYes').focus();
+  $('restoreYes').onclick=()=>{$('restore').classList.add('hidden');load(b.root,b.format,b.fileName);state.dirty=true;render();toast('前回の作業を復元しました（まだファイルには保存されていません）')};
+  $('restoreNo').onclick=()=>{$('restore').classList.add('hidden');try{localStorage.removeItem(BACKUP_KEY)}catch{}load(blankDoc(),'xdts','')};
+}
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)}
+
+// ---- wiring --------------------------------------------------------------------------
+const app=$('app');
+let dragSel=false;
+app.addEventListener('mousedown',e=>{
+  const td=e.target.closest('td[data-fid]');
+  if(!td||e.target.closest('input')||e.button!==0)return;
+  const target={fid:+td.dataset.fid,tr:+td.dataset.tr,f:+td.dataset.f};
+  // clicking away from an open input: commit it first, then select only the clicked cell
+  const wasEditing=state.editing;
+  if(wasEditing)document.activeElement?.blur?.();
+  select(target.fid,target.tr,target.f,false,e.shiftKey&&!wasEditing);
+  dragSel=true;
+});
+app.addEventListener('mouseover',e=>{
+  if(!dragSel)return;
+  const td=e.target.closest('td[data-fid]');if(!td)return;
+  const s=state.sel;
+  if(!(s.fid===+td.dataset.fid&&s.tr===+td.dataset.tr&&s.frame===+td.dataset.f))select(+td.dataset.fid,+td.dataset.tr,+td.dataset.f,false,true);
+});
+document.addEventListener('mouseup',()=>{dragSel=false});
+app.addEventListener('dblclick',e=>{
+  const th=e.target.closest('th.col');if(th&&!e.target.closest('.colmenu')&&editable(+th.dataset.fid)){renameColumn(+th.dataset.fid,+th.dataset.tr,th);return}
+  if(e.target.closest('td[data-fid]'))beginEdit();
+});
+app.addEventListener('click',e=>{const x=e.target.closest('.colmenu');if(x){e.stopPropagation();const r=x.getBoundingClientRect();columnMenu({preventDefault(){},clientX:r.left,clientY:r.bottom},x.closest('th.col'));return}
+  const b=e.target.closest('.addbtn,td.slot');if(b){e.stopPropagation();addColumn(+b.dataset.add,b.dataset.kind);return}
+  const sb=e.target.closest('[data-sheet]');if(sb&&!sb.disabled)changeSheets(sb.dataset.sheet==='add'?1:-1)});
+app.addEventListener('contextmenu',e=>{const th=e.target.closest('th.col');if(th){if(state.hdrRc==='fusion'&&fusionFieldFor(+th.dataset.fid)&&!e.target.closest('.colmenu')){e.preventDefault();hideMenu();copyFusionTrack(+th.dataset.fid,+th.dataset.tr)}else columnMenu(e,th);return}const td=e.target.closest('td[data-fid]');if(td)cellMenu(e,td)});
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#menu,#colAdd'))hideMenu()});
+document.addEventListener('keydown',keydown);
+$('btnNew').onclick=newDoc;$('btnSave').onclick=save;$('btnUndo').onclick=undo;$('btnRedo').onclick=redo;
+$('file').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)openFile(f)};
+document.querySelectorAll('.seg button[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('.seg button[data-view]').forEach(x=>x.classList.toggle('on',x===b));render();if(state.sel)select(state.sel.fid,state.sel.tr,state.sel.frame,true,true)});
+function setHdrRc(v){state.hdrRc=v;savePref('hdrRc',v);document.querySelectorAll('.seg button[data-hrc]').forEach(x=>x.classList.toggle('on',x.dataset.hrc===v))}
+document.querySelectorAll('.seg button[data-hrc]').forEach(b=>b.onclick=()=>{setHdrRc(b.dataset.hrc);render()});setHdrRc(state.hdrRc);
+$('visToggles').onclick=e=>{const b=e.target.closest('[data-vis]');if(b)setVisible(b.dataset.vis,!b.classList.contains('on'))};
+$('app').addEventListener('click',e=>{if(e.target.closest('.hidden-note')){state.hidden.clear();saveHidden();state.anchor=null;render();toast('すべての列を表示しました')}});
+$('btnKeys').onclick=()=>$('keysDlg').classList.remove('hidden');
+$('keysClose').onclick=()=>$('keysDlg').classList.add('hidden');
+$('keysDlg').addEventListener('mousedown',e=>{if(e.target.id==='keysDlg')$('keysDlg').classList.add('hidden')});
+$('stepSeg').onclick=e=>{const b=e.target.closest('[data-step]');if(b)setStep(b.dataset.step)};
+document.querySelectorAll('#stepSeg button').forEach(b=>b.classList.toggle('on',b.dataset.step===state.step));
+$('btnSeq').onclick=fillSequence;$('btnSoundLen').onclick=fitSoundLength;$('btnInsFrames').onclick=()=>shiftFrames(true,false);$('btnDelFrames').onclick=()=>shiftFrames(false,false);
+$('btnCopy').onclick=()=>cmdCopy(false);$('btnCut').onclick=()=>cmdCopy(true);$('btnPaste').onclick=cmdPaste;
+$('btnDelete').onclick=()=>deleteRange();$('btnSelAll').onclick=selectAll;
+$('sheetAdd').onclick=()=>changeSheets(1);$('colDel').onclick=deleteSelectedColumns;$('sheetDel').onclick=()=>changeSheets(-1);
+$('colAdd').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();addColumnMenu(r.left,r.bottom+4)};
+document.querySelectorAll('.seg button[data-fm]').forEach(b=>b.onclick=()=>{state.frameMode=b.dataset.fm;document.querySelectorAll('.seg button[data-fm]').forEach(x=>x.classList.toggle('on',x===b));render()});
+$('sheetPrev').onclick=()=>goSheet(currentSheet()-1);$('sheetNext').onclick=()=>goSheet(currentSheet()+1);
+$('sheetChips').onclick=e=>{const b=e.target.closest('[data-sheet-go]');if(b)goSheet(+b.dataset.sheetGo)};
+$('main').addEventListener('scroll',()=>{cancelAnimationFrame(updatePager.r);updatePager.r=requestAnimationFrame(updatePager)},{passive:true});
+window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue=''}});
+let dragDepth=0;const hasFiles=e=>Array.from(e.dataTransfer?.types||[]).includes('Files');
+document.addEventListener('dragenter',e=>{if(!hasFiles(e))return;e.preventDefault();dragDepth++;$('drop').classList.remove('hidden')});
+document.addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefault();e.dataTransfer.dropEffect='copy'});
+document.addEventListener('dragleave',e=>{if(!hasFiles(e))return;if(--dragDepth<=0){dragDepth=0;$('drop').classList.add('hidden')}});
+document.addEventListener('drop',e=>{if(!hasFiles(e))return;e.preventDefault();dragDepth=0;$('drop').classList.add('hidden');const f=e.dataTransfer.files[0];if(f)openFile(f)});
+
+offerRestore();
+</script>
+</body>
+</html>
