@@ -518,7 +518,8 @@ const $=id=>document.getElementById(id);
 const VIS_KINDS=[{kind:'action',label:'ACTION',icon:'🅰️'},{kind:'cell',label:'CELL',icon:'🔤',tdtsOnly:true},{kind:'sound',label:'セリフ',icon:'💬'},{kind:'cam',label:'CAM',icon:'🎥'}];
 function loadPref(k,d){try{return localStorage.getItem('tsEditor.'+k)??d}catch{return d}}
 function savePref(k,v){try{localStorage.setItem('tsEditor.'+k,v)}catch{}}
-function loadHidden(){try{return new Set(JSON.parse(localStorage.getItem('tsEditor.hidden')||'[]'))}catch{return new Set()}}
+// CAM is hidden until the viewer turns it on (most users don't use it); a saved choice wins
+function loadHidden(){try{const v=localStorage.getItem('tsEditor.hidden');return new Set(v===null?['cam']:JSON.parse(v))}catch{return new Set(['cam'])}}
 function saveHidden(){try{localStorage.setItem('tsEditor.hidden',JSON.stringify([...state.hidden]))}catch{}}
 const clone=x=>JSON.parse(JSON.stringify(x));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
